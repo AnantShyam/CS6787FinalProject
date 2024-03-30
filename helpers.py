@@ -1,4 +1,15 @@
 import numpy as np 
+import torch
+
+def l2_regularized_logistic_regression_loss(w, X = None, y=None):
+    loss = 0
+    n = len(y)
+
+    for i in range(n):
+        training_example, label = X[:, i], y[i]
+        loss = loss + (torch.log(1 + torch.exp(-label * w.T @ training_example)))
+    return float(loss)/float(n)
+
 
 def read_a9a_dataset(file_path):
     dataset = []
@@ -31,4 +42,4 @@ def read_a9a_dataset(file_path):
     assert dataset.shape == (124, 32561)
     assert labels.shape == (32561,)
 
-    return dataset, labels
+    return torch.from_numpy(dataset).to(torch.float32), torch.from_numpy(labels).to(torch.float32)
