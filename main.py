@@ -2,17 +2,50 @@ import numpy as np
 import torch
 import sklearn 
 import helpers
+from tqdm import tqdm
             
-def newton_method(X, y):
-    """
-    Standard implementation of Newton's Method
-    Using L2-regularized logistic regression (trying to get a baseline)
-    """
-    pass
+class NewtonMethod:
+
+    def __init__(self, X, y):
+        self.X = X 
+        self.y = y
+
+    def l2_regularized_logistic_regression_loss(self,w):
+        loss = 0
+        n = len(self.y)
+        for i in range(n):
+            training_example, label = self.X[:, i], self.y[i]
+            loss = loss + (torch.log(1 + torch.exp((-w.T @ training_example) * label))).item()
+        # print(loss)
+        regularization_constant = 0.1
+        regularization_term = (regularization_constant * torch.pow(torch.norm(w), 2)/2.0).item()
+
+        total_loss = (float(loss)/float(n)) + regularization_term
+        return torch.tensor([total_loss])
+
+
+    def newton_method(self):
+        """
+        Standard implementation of Newton's Method
+        Using L2-regularized logistic regression (trying to get a baseline)
+        """
+        w = torch.rand(self.X.shape[0])
+
+        for i in tqdm(range(1)):
+            hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+
+            gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
+            
+            hessian_inverse = torch.inverse(hessian_matrix)
+            w = w - (hessian_inverse @ gradient)
+
+        return w
 
 
 if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
-    w = torch.ones(124).to(torch.float32)
-    loss = helpers.l2_regularized_logistic_regression_loss(w, a9a_dataset, labels)
-    print(loss)
+    print(a9a_dataset)
+    newton_m = NewtonMethod(a9a_dataset, labels)
+    new_w  = newton_m.newton_method()
+    # print(new_w)
+    
