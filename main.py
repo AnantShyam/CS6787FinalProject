@@ -38,7 +38,7 @@ class NewtonMethod:
             hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             hessian_inverse = torch.inverse(hessian_matrix)
-            w = w - (hessian_inverse @ gradient)
+            w = w - (0.001 * (hessian_inverse @ gradient))
             print(self.l2_regularized_logistic_regression_loss(w))
 
 
