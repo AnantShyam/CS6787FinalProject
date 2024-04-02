@@ -35,13 +35,8 @@ class A9A_Analysis:
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             w = w - (alpha * gradient)
             loss_values.append(self.l2_regularized_logistic_regression_loss(w).item())
-        print(loss_values[-1])
-        plt.plot([i for i in range(1, num_epochs + 1)], loss_values)
-        plt.xlabel("Epoch Number")
-        plt.ylabel("Loss")
-        plt.show()
+        return loss_values
         
-
 
     def newton_method(self):
         """
@@ -61,13 +56,24 @@ class A9A_Analysis:
 
         return w, loss_values
 
+    def plot_suboptimality(self):
+        # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
+        final_converged_loss = self.gradient_descent()[-1]
+        _, newton_method_loss_vals = self.newton_method()
+        
+        loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
+                                for i in range(1, len(newton_method_loss_vals))}
+
+        plt.plot([key for key in loss_differences], [loss_differences[key] for key in loss_differences])
+        plt.show()
+        
 
 
 if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
     
-    a9a.gradient_descent()
+    a9a.plot_suboptimality()
     
     # new_w, loss_values  = newton_m.newton_method()
     
