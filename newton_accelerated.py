@@ -19,6 +19,9 @@ class Newton_Accelerated:
         non_symmetric_hessian = torch.reshape(four_dim_hessian, (self.m ** 2, self.n ** 2))
         return non_symmetric_hessian
 
+    def svd_hessian(self):
+        return torch.svd(self.hessian)
+
 
 if __name__ == "__main__":
     pass
