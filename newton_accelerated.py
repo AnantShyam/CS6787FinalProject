@@ -30,11 +30,11 @@ class Newton_Accelerated:
         approximate_hessian = A @ B.T 
 
         approximate_hessian = torch.reshape(approximate_hessian, hessian_shape)
-
-        assert approximate_hessian.shape == hessian_shape
         return approximate_hessian
 
 
+    def solve_linear_system(self):
+        pass
 
 if __name__ == "__main__":
     
