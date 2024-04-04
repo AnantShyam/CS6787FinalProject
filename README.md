@@ -1,6 +1,6 @@
-CS 6787 Final Project
-
-Plan: Accelerating Newton's Method using Krylov Subspace Methods
-
+# Accelerating Newton's Method Using Krylov Subspace Methods
+## About this Repository
+This repository contains our code for this project. 
+## Collaborators
 Anant Shyam (ais64@cornell.edu) <br />
 James Chen (bc526@cornell.edu)
