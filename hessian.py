@@ -2,10 +2,10 @@ import torch
 import helpers
 import a9a_analysis
 
-class Newton_Accelerated:
+class Hessian:
 
-    def __init__(self, hessian, m, n):
-        self.hessian = hessian # untransformed hessian 
+    def __init__(self, hessian_matrix, m, n):
+        self.hessian = hessian_matrix # untransformed hessian 
         self.m = m 
         self.n = n
 
@@ -33,13 +33,10 @@ class Newton_Accelerated:
         return approximate_hessian
 
 
-    def solve_linear_system(self):
-        pass
-
 if __name__ == "__main__":
     
     # generate random matrix for testing purposes
-    hessian = torch.rand(6, 6)
-    newton_acc = Newton_Accelerated(hessian, 2, 3)
+    hessian_matrix = torch.rand(6, 6)
+    newton_acc = Hessian(hessian_matrix, 2, 3)
     approx_hessian = newton_acc.approximate_hessian()
 
