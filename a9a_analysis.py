@@ -27,15 +27,40 @@ class A9A_Analysis:
     # H = A B, A = first column of U, B = first column of V^T
 
     def gradient_descent(self):
-        w = torch.rand(self.X.shape[0])
-        alpha = 1 # choose some small step size to get as close to minimum possible loss as possible
-        loss_values = []
-        num_epochs = 100
-        for epoch in tqdm(range(num_epochs)):
+        d, n = self.X.shape
+        w = torch.rand(d)
+
+        # compute the largest eigenvalue of Hessian at w = 0, hessian = 124 x 124
+        # H = 1/n  X^T P X, P = 0.25 I when w = 0
+        hessian_w_equals_0 = (1/n) * (self.X @ (0.25 * torch.eye(n)) @ self.X.T) 
+
+        # assuming all eigenvalues are essentially real
+        eigenvalues_hessian_w_equals_0 = torch.view_as_real(torch.linalg.eig(hessian_w_equals_0)[0])
+    
+        #print(torch.linalg.eig(hessian_w_equals_0)[0])
+        largest_eigenvalue = torch.max(eigenvalues_hessian_w_equals_0)
+
+        alpha = 2/largest_eigenvalue
+        loss_values = [float('inf')]
+
+        
+        while True:
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             w = w - (alpha * gradient)
-            loss_values.append(self.l2_regularized_logistic_regression_loss(w).item())
-        return loss_values
+            curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
+            #loss_values.append(curr_loss)
+            #print(curr_loss)
+            if abs(curr_loss - loss_values[-1]) <= (10 ** (-16)):
+                break
+            else:
+                loss_values.append(curr_loss)
+
+        # num_epochs = 100
+        # for epoch in tqdm(range(num_epochs)):
+        #     gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
+        #     w = w - (alpha * gradient)
+        #     loss_values.append(self.l2_regularized_logistic_regression_loss(w).item())
+        return loss_values[1:]
         
 
     def newton_method(self):
@@ -64,7 +89,11 @@ class A9A_Analysis:
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
 
+        plt.yscale('log')
+        
         plt.plot([key for key in loss_differences], [loss_differences[key] for key in loss_differences])
+        
+        
         plt.show()
         
 
@@ -72,8 +101,9 @@ class A9A_Analysis:
 if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
-    
+    # print(a9a.X.shape)
     a9a.plot_suboptimality()
+    #loss_vals = a9a.gradient_descent()
     
     # new_w, loss_values  = newton_m.newton_method()
     
