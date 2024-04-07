@@ -37,29 +37,22 @@ class A9A_Analysis:
         # assuming all eigenvalues are essentially real
         eigenvalues_hessian_w_equals_0 = torch.view_as_real(torch.linalg.eig(hessian_w_equals_0)[0])
     
-        #print(torch.linalg.eig(hessian_w_equals_0)[0])
         largest_eigenvalue = torch.max(eigenvalues_hessian_w_equals_0)
 
         alpha = 2/largest_eigenvalue
         loss_values = [float('inf')]
 
-        
+        tolerance = 10**(-16)
         while True:
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             w = w - (alpha * gradient)
             curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
-            #loss_values.append(curr_loss)
-            #print(curr_loss)
-            if abs(curr_loss - loss_values[-1]) <= (10 ** (-16)):
+            print(curr_loss)
+            if abs(curr_loss - loss_values[-1]) <= tolerance:
                 break
             else:
                 loss_values.append(curr_loss)
 
-        # num_epochs = 100
-        # for epoch in tqdm(range(num_epochs)):
-        #     gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
-        #     w = w - (alpha * gradient)
-        #     loss_values.append(self.l2_regularized_logistic_regression_loss(w).item())
         return loss_values[1:]
         
 
@@ -71,8 +64,9 @@ class A9A_Analysis:
         w = torch.rand(self.X.shape[0])
 
         loss_values = {}
+        num_epochs = 8
 
-        for epoch in tqdm(range(8)):
+        for epoch in tqdm(range(num_epochs)):
             hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             hessian_inverse = torch.inverse(hessian_matrix)
@@ -80,6 +74,16 @@ class A9A_Analysis:
             loss_values[epoch + 1] = self.l2_regularized_logistic_regression_loss(w).item()
 
         return w, loss_values
+
+
+    def plot_curve(self, x_axis_vals, y_axis_vals, x_axis_title, y_axis_title, file_name):
+        # plot on log scale
+        plt.yscale('log')
+        plt.plot(x_axis_vals, y_axis_vals)
+        plt.xlabel(f'{x_axis_title}')
+        plt.ylabel(f'{y_axis_title}')
+        plt.savefig(f'plots/{file_name}.png')
+
 
     def plot_suboptimality(self):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
@@ -89,12 +93,8 @@ class A9A_Analysis:
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
 
-        plt.yscale('log')
-        
-        plt.plot([key for key in loss_differences], [loss_differences[key] for key in loss_differences])
-        
-        
-        plt.show()
+        self.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
+        'Number of Epochs', 'Suboptimality', 'a9a_suboptimality.png')
         
 
 
