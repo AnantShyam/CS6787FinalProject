@@ -1,6 +1,4 @@
 import torch 
-import helpers
-import a9a_analysis
 
 class Hessian:
 
@@ -37,6 +35,8 @@ if __name__ == "__main__":
     
     # generate random matrix for testing purposes
     hessian_matrix = torch.rand(6, 6)
+    print(hessian_matrix)
     newton_acc = Hessian(hessian_matrix, 2, 3)
     approx_hessian = newton_acc.approximate_hessian()
+    print(approx_hessian)
 

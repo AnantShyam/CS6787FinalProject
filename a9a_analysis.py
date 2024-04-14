@@ -4,6 +4,8 @@ import sklearn
 import helpers
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import hessian
+import scipy
             
 class A9A_Analysis:
 
@@ -56,7 +58,7 @@ class A9A_Analysis:
         return loss_values[1:]
         
 
-    def newton_method(self):
+    def newton_method(self, exact=True):
         """
         Standard implementation of Newton's Method
         Using L2-regularized logistic regression (trying to get a baseline)
@@ -67,10 +69,29 @@ class A9A_Analysis:
         num_epochs = 8
 
         for epoch in tqdm(range(num_epochs)):
-            hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            
+            # compute the gradient 
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
-            hessian_inverse = torch.inverse(hessian_matrix)
-            w = w - (0.5 * (hessian_inverse @ gradient))
+
+            # compute the Hessian, update the weights, hessian shape = 124 x 124
+            hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            
+            if exact:
+                #hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+                hessian_inverse = torch.inverse(hessian_matrix)
+                w = w - (0.5 * (hessian_inverse @ gradient))
+            else:
+                m, n = 31, 4 # arbitrary factors that multiply to 124
+                approx_hessian = hessian.Hessian(hessian_matrix, m, n).approximate_hessian()
+                print(approx_hessian.shape)
+                print(gradient.shape)
+                assert approx_hessian.shape == hessian_matrix.shape
+                # use GMRES to solve for update to weight vector
+                approx_hessian = scipy.sparse.csr_matrix(approx_hessian).toarray()
+
+                update, _ = scipy.sparse.linalg.gmres(approx_hessian, gradient)
+                w = w - (0.5 * update)
+
             loss_values[epoch + 1] = self.l2_regularized_logistic_regression_loss(w).item()
 
         return w, loss_values
@@ -78,8 +99,9 @@ class A9A_Analysis:
 
     def plot_suboptimality(self):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
-        final_converged_loss = self.gradient_descent()[-1]
-        _, newton_method_loss_vals = self.newton_method()
+        # final_converged_loss = self.gradient_descent()[-1]
+        #final_converged_loss=0
+        _, newton_method_loss_vals = self.newton_method(False)
         
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
