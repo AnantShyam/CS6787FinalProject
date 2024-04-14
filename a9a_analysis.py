@@ -76,15 +76,6 @@ class A9A_Analysis:
         return w, loss_values
 
 
-    def plot_curve(self, x_axis_vals, y_axis_vals, x_axis_title, y_axis_title, file_name):
-        # plot on log scale
-        plt.yscale('log')
-        plt.plot(x_axis_vals, y_axis_vals)
-        plt.xlabel(f'{x_axis_title}')
-        plt.ylabel(f'{y_axis_title}')
-        plt.savefig(f'plots/{file_name}.png')
-
-
     def plot_suboptimality(self):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
         final_converged_loss = self.gradient_descent()[-1]
@@ -93,7 +84,7 @@ class A9A_Analysis:
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
 
-        self.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
+        helpers.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
         'Number of Epochs', 'Suboptimality', 'a9a_suboptimality.png')
         
 

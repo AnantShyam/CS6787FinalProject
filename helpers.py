@@ -2,6 +2,15 @@ import numpy as np
 import torch
 
 
+def plot_curve(x_axis_vals, y_axis_vals, x_axis_title, y_axis_title, file_name):
+    # plot on log scale
+    plt.yscale('log')
+    plt.plot(x_axis_vals, y_axis_vals)
+    plt.xlabel(f'{x_axis_title}')
+    plt.ylabel(f'{y_axis_title}')
+    plt.savefig(f'plots/{file_name}.png')
+
+
 def read_a9a_dataset(file_path):
     dataset = []
     labels = []
@@ -34,3 +43,4 @@ def read_a9a_dataset(file_path):
     assert labels.shape == (32561,)
 
     return torch.from_numpy(dataset).to(torch.float32), torch.from_numpy(labels).to(torch.float32)
+
