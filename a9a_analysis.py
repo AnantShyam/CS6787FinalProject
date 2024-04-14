@@ -82,17 +82,20 @@ class A9A_Analysis:
                 w = w - (0.5 * (hessian_inverse @ gradient))
             else:
                 m, n = 31, 4 # arbitrary factors that multiply to 124
+                print(hessian_matrix)
                 approx_hessian = hessian.Hessian(hessian_matrix, m, n).approximate_hessian()
-                print(approx_hessian.shape)
-                print(gradient.shape)
+                # print(approx_hessian.shape)
+                # print(gradient.shape)
                 assert approx_hessian.shape == hessian_matrix.shape
                 # use GMRES to solve for update to weight vector
                 approx_hessian = scipy.sparse.csr_matrix(approx_hessian).toarray()
 
                 update, _ = scipy.sparse.linalg.gmres(approx_hessian, gradient)
                 w = w - (0.5 * update)
-
-            loss_values[epoch + 1] = self.l2_regularized_logistic_regression_loss(w).item()
+            
+            loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+            #print(loss_val)
+            loss_values[epoch + 1] = loss_val
 
         return w, loss_values
 
@@ -107,7 +110,7 @@ class A9A_Analysis:
                                 for i in range(1, len(newton_method_loss_vals))}
 
         helpers.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
-        'Number of Epochs', 'Suboptimality', 'a9a_suboptimality.png')
+        'Number of Epochs', 'Suboptimality', 'a9a_suboptimality_approx_hessian.png')
         
 
 
