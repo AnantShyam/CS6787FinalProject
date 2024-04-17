@@ -82,6 +82,7 @@ class A9A_Analysis:
                 w = w - (0.5 * (hessian_inverse @ gradient))
             else:
                 m, n = 31, 4 # arbitrary factors that multiply to 124
+                print("-----")
                 print(hessian_matrix)
                 approx_hessian = hessian.Hessian(hessian_matrix, m, n).approximate_hessian()
                 # print(approx_hessian.shape)
@@ -89,12 +90,14 @@ class A9A_Analysis:
                 assert approx_hessian.shape == hessian_matrix.shape
                 # use GMRES to solve for update to weight vector
                 approx_hessian = scipy.sparse.csr_matrix(approx_hessian).toarray()
-
+                print(approx_hessian)
                 update, _ = scipy.sparse.linalg.gmres(approx_hessian, gradient)
                 w = w - (0.5 * update)
+                print(w)
             
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
-            #print(loss_val)
+            # print(loss_val)
+            # print(loss_val)
             loss_values[epoch + 1] = loss_val
 
         return w, loss_values
@@ -102,9 +105,9 @@ class A9A_Analysis:
 
     def plot_suboptimality(self):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
-        # final_converged_loss = self.gradient_descent()[-1]
+        final_converged_loss = self.gradient_descent()[-1]
         #final_converged_loss=0
-        _, newton_method_loss_vals = self.newton_method(False)
+        _, newton_method_loss_vals = self.newton_method(True)
         
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
