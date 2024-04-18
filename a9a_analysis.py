@@ -120,6 +120,75 @@ class A9A_Analysis:
         return w, loss_values
 
 
+    def conjugate_gradient_hessian_vp(self, gradient, w):
+        """
+        trying to solve the linear system hessian (x) = gradient using hessian vector product
+        with conjugate gradient 
+        """
+        l2_logistic_loss = lambda x: self.l2_regularized_logistic_regression_loss(x)
+        tolerance = 10**-3
+
+        x_i = torch.rand(gradient.shape[0])
+        _, hessian_times_x_0 = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x_i)
+
+        # print(gradient.shape)
+        # print(hessian_times_x_0.shape)
+        r_i = gradient - hessian_times_x_0
+        p_i = r_i
+
+        if torch.norm(r_i) <= tolerance:
+            return x_i
+        
+        num_iter = 2
+        for i in range(num_iter): # run for a certain number of iterations 
+            _, hessian_times_p_i = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x_i)
+            #print(hessian_times_p_i)
+            alpha_i = (r_i.T @ r_i)/(p_i.T @ hessian_times_p_i)
+            #print(alpha_i)
+            #print(p_i)
+            x_i = x_i + (alpha_i * p_i)
+            
+
+            r_prev = r_i 
+            r_i = r_i - (alpha_i * hessian_times_p_i)
+            if torch.norm(r_i) <= tolerance:
+                return x_i 
+            
+            beta_i = (r_i.T @ r_i)/(r_prev.T @ r_prev)
+            p_i = r_i + (beta_i * p_i)
+
+        return x_i
+
+
+
+    def sketch_newton_method(self, num_epochs):
+        """
+        Idea: don't directly compute the Hessian. Solve linear system H p = g with hessian vector products
+
+        let loss function be L 
+        Define g(w) = v.T @ grad_L(w)
+
+        grad_g(w) = H v, H = hessian of loss function L
+
+        """
+        w = torch.rand(self.X.shape[0])
+         
+        for _ in tqdm(range(num_epochs)):
+
+            # compute the gradient 
+            gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
+
+            # solve the linear system with conjugate gradient using hessian vector products
+            update = self.conjugate_gradient_hessian_vp(gradient, w)
+            w = w - (0.1 * update) 
+            loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+            print(loss_val)
+
+        return w 
+
+
+
+
     def plot_suboptimality(self):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
         #final_converged_loss = self.gradient_descent()[-1]
@@ -137,8 +206,11 @@ class A9A_Analysis:
 if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
+
+    print(a9a.sketch_newton_method(10))
     # print(a9a.X.shape)
-    a9a.plot_suboptimality()
+    # a9a.plot_suboptimality()
+
     
     # print(loss_values)
     # plt.plot([key for key in loss_values], [loss_values[key] for key in loss_values])
