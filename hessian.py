@@ -17,9 +17,9 @@ class Hessian:
         
         four_dim_hessian = torch.reshape(self.hessian, (self.m, self.n, self.m, self.n))
         non_symmetric_hessian = torch.reshape(four_dim_hessian, (self.m ** 2, self.n ** 2))
-        print("printing singular values ")
-        print(non_symmetric_hessian[0: 6])
-        print(torch.linalg.svdvals(non_symmetric_hessian))
+        # print("printing singular values ")
+        # print(non_symmetric_hessian[0: 6])
+        # print(torch.linalg.svdvals(non_symmetric_hessian))
         U, S, V = torch.svd(non_symmetric_hessian)
         A, B = U[:, 0], V[:, 0]
         A, B = torch.reshape(A, (A.shape[0], 1)), torch.reshape(B, (B.shape[0], 1))

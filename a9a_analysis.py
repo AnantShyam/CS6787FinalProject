@@ -18,8 +18,12 @@ class A9A_Analysis:
         n = len(self.y)
         for i in range(n):
             training_example, label = self.X[:, i], self.y[i]
-            loss = loss + (torch.log(1 + torch.exp((-w.T @ training_example) * label)))
+            
+            concat_tensor = torch.tensor([0, (-w.T @ training_example) * label])
+            exp_term = torch.logsumexp(concat_tensor, 0)
 
+            loss = loss + exp_term
+            
         regularization_constant = 0.05
         regularization_term = (regularization_constant * torch.pow(torch.norm(w), 2)/2.0)
         total_loss = (loss/n) + regularization_term
@@ -49,7 +53,6 @@ class A9A_Analysis:
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             w = w - (alpha * gradient)
             curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
-            print(curr_loss)
             if abs(curr_loss - loss_values[-1]) <= tolerance:
                 break
             else:
@@ -75,26 +78,36 @@ class A9A_Analysis:
 
             # compute the Hessian, update the weights, hessian shape = 124 x 124
             hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            hessian_num_rows, hessian_num_columns = hessian_matrix.shape
             
             if exact:
                 #hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
                 hessian_inverse = torch.inverse(hessian_matrix)
                 w = w - (0.5 * (hessian_inverse @ gradient))
             else:
-                m, n = 31, 4 # arbitrary factors that multiply to 124
-                print(hessian_matrix)
-                approx_hessian = hessian.Hessian(hessian_matrix, m, n).approximate_hessian()
-                # print(approx_hessian.shape)
-                # print(gradient.shape)
-                assert approx_hessian.shape == hessian_matrix.shape
-                # use GMRES to solve for update to weight vector
-                approx_hessian = scipy.sparse.csr_matrix(approx_hessian).toarray()
+                # do rank k approximation with SVD 
+                U, S, V = torch.svd(hessian_matrix)
+                k = int(hessian_num_columns/2)
+                #print(k)
+                U_k, S_k, V_k = U[:, 0: k], torch.diag(S[0: k]), V[:, 0: k]
+                low_rank_hessian = (U_k @ S_k @ V_k.T)
 
-                update, _ = scipy.sparse.linalg.gmres(approx_hessian, gradient)
-                w = w - (0.5 * update)
+                # solve the linear system with conjugate gradient for right now
+                tau = 0.001
+                low_rank_hessian = low_rank_hessian + (tau * torch.eye(hessian_num_rows))
+                print(low_rank_hessian)
+
+                # add regularization to low rank hessian 
+
+                update = torch.from_numpy(scipy.sparse.linalg.cg(low_rank_hessian.numpy(), gradient.numpy())[0])
+                
+                # change step size to 10^-3
+                w = w - (0.001 * update)
+                #print(w)
             
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
-            #print(loss_val)
+            print(loss_val)
+            # print(loss_val)
             loss_values[epoch + 1] = loss_val
 
         return w, loss_values
@@ -102,7 +115,7 @@ class A9A_Analysis:
 
     def plot_suboptimality(self):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
-        # final_converged_loss = self.gradient_descent()[-1]
+        #final_converged_loss = self.gradient_descent()[-1]
         #final_converged_loss=0
         _, newton_method_loss_vals = self.newton_method(False)
         
