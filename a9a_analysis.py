@@ -19,14 +19,11 @@ class A9A_Analysis:
         for i in range(n):
             training_example, label = self.X[:, i], self.y[i]
             
-            # numpy: logaddexp 
-            # [0, (-w.T @ training_example) * label)]
             concat_tensor = torch.tensor([0, (-w.T @ training_example) * label])
             exp_term = torch.logsumexp(concat_tensor, 0)
-            # exp_term = np.logaddexp(0, (-w.T @ training_example) * label)
-            loss = loss + exp_term
-            #loss = loss + (torch.log(1 + torch.exp((-w.T @ training_example) * label)))
 
+            loss = loss + exp_term
+            
         regularization_constant = 0.05
         regularization_term = (regularization_constant * torch.pow(torch.norm(w), 2)/2.0)
         total_loss = (loss/n) + regularization_term
