@@ -82,83 +82,51 @@ class A9A_Analysis:
         
         return w, loss_values
 
-    def newton_method_svd_low_rank(self, num_epochs):
-        """
-        Standard implementation of Newton's Method
-        Using L2-regularized logistic regression (trying to get a baseline)
-        """
-        w = torch.rand(self.X.shape[0])
 
-        loss_values = {}
-        num_epochs = 8
+    def biconjugate_gradient_stable(self, w, b):
 
-        for epoch in tqdm(range(num_epochs)):
-            
-            # compute the gradient 
-            gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
-
-            # compute the Hessian
-            hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
-            hessian_num_rows, hessian_num_columns = hessian_matrix.shape
-            
-            # do rank k approximation with SVD 
-            U, S, V = torch.svd(hessian_matrix)
-            k = int(hessian_num_columns/2)
-            U_k, S_k, V_k = U[:, 0: k], torch.diag(S[0: k]), V[:, 0: k]
-            low_rank_hessian = (U_k @ S_k @ V_k.T)
-            
-            # add regularization to make hessian positive definite
-            tau = 0.001
-            low_rank_hessian = low_rank_hessian + (tau * torch.eye(hessian_num_rows))
-
-            # solve linear system with conjugate gradient 
-            update = torch.from_numpy(scipy.sparse.linalg.cg(low_rank_hessian.numpy(), gradient.numpy())[0])
-            w = w - (0.001 * update)
-            loss_val = self.l2_regularized_logistic_regression_loss(w).item()
-            loss_values[epoch + 1] = loss_val
-
-        return w, loss_values
-
-
-    def conjugate_gradient_hessian_vp(self, gradient, w):
-        """
-        trying to solve the linear system hessian (x) = gradient using hessian vector product
-        with conjugate gradient 
-        """
-        l2_logistic_loss = lambda x: self.l2_regularized_logistic_regression_loss(x)
-        tolerance = 10**-3
-
-        x_i = torch.rand(gradient.shape[0])
-        _, hessian_times_x_0 = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x_i)
-
-        # print(gradient.shape)
-        # print(hessian_times_x_0.shape)
-        r_i = gradient - hessian_times_x_0
-        p_i = r_i
-
-        if torch.norm(r_i) <= tolerance:
-            return x_i
+        # A = hessian 
+        num_iter = 15
         
-        num_iter = 2
-        for i in range(num_iter): # run for a certain number of iterations 
-            _, hessian_times_p_i = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x_i)
-            #print(hessian_times_p_i)
-            alpha_i = (r_i.T @ r_i)/(p_i.T @ hessian_times_p_i)
-            #print(alpha_i)
-            #print(p_i)
-            x_i = x_i + (alpha_i * p_i)
-            
+        x = [None] * num_iter 
+        r = [None] * num_iter
+        r_hat = [None] * num_iter
+        rho = [None] * num_iter
+        p = [None] * num_iter
 
-            r_prev = r_i 
-            r_i = r_i - (alpha_i * hessian_times_p_i)
-            if torch.norm(r_i) <= tolerance:
-                return x_i 
-            
-            beta_i = (r_i.T @ r_i)/(r_prev.T @ r_prev)
-            p_i = r_i + (beta_i * p_i)
+        # initialize parameters
+        x[0] = torch.rand(b.shape[0])
 
-        return x_i
+        r[0] = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[0])[1]
+        #r[0] = b - (A @ x[0])
+        r_hat[0] = torch.clone(r[0])
 
+        rho[0] = (r_hat[0].T @ r[0])
+        p[0] = r[0]
+
+        for i in range(1, num_iter):
+
+            v = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, p[i - 1])[1]
+            # v = A @ p[i - 1]
+            alpha = rho[i - 1]/(r_hat[0].T @ v)
+            h = x[i - 1] + (alpha * p[i - 1])
+            s = r[i - 1] - (alpha * v)
+
+            dist_to_solution = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[i - 1])[1]
+            if (torch.norm(dist_to_solution)) <= 10**-3:
+                return x[i - 1]
+
+            t = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, s)[1]
+            #t = A @ s 
+            omega = (t.T @ s)/(t.T @ t)
+            x[i] = h + (omega * s)
+            r[i] = s - (omega * t)
+            rho[i] = (r_hat[0].T @ r[i])
+
+            beta = (rho[i]/rho[i - 1]) * (alpha/omega)
+            p[i] = r[i] + (beta * (p[i - 1] - (omega * v)))
+        
+        return x[-1]
 
 
     def sketch_newton_method(self, num_epochs):
@@ -177,16 +145,19 @@ class A9A_Analysis:
 
             # compute the gradient 
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
-
+            hessian = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            
+            hessian = hessian + (0.01 * torch.eye(len(hessian)))
+            
             # solve the linear system with conjugate gradient using hessian vector products
-            update = self.conjugate_gradient_hessian_vp(gradient, w)
+
+            update = self.biconjugate_gradient_stable(w, gradient)
+            #update = self.conjugate_gradient_hessian_vp(gradient, w)
             w = w - (0.1 * update) 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             print(loss_val)
 
         return w 
-
-
 
 
     def plot_suboptimality(self):
@@ -207,7 +178,7 @@ if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
 
-    print(a9a.sketch_newton_method(10))
+    # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)
     # a9a.plot_suboptimality()
 
