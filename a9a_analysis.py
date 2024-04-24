@@ -6,6 +6,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import hessian
 import scipy
+import os
             
 class A9A_Analysis:
 
@@ -141,7 +142,8 @@ class A9A_Analysis:
         """
         w = torch.rand(self.X.shape[0])
          
-        for _ in tqdm(range(num_epochs)):
+        loss_values = {}
+        for epoch in tqdm(range(num_epochs)):
 
             # compute the gradient 
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
@@ -155,28 +157,41 @@ class A9A_Analysis:
             #update = self.conjugate_gradient_hessian_vp(gradient, w)
             w = w - (0.1 * update) 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+            loss_values[epoch + 1] = loss_val
             print(loss_val)
 
-        return w 
+        return w, loss_values
 
 
-    def plot_suboptimality(self):
+    def plot_suboptimality(self, filename, newton_method):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
-        #final_converged_loss = self.gradient_descent()[-1]
+        
+        #gradient_descent_loss = self.gradient_descent()
+        #torch.save(torch.tensor(gradient_descent_loss), 'model_training_information/gradient_descent_loss.pt')
+        
+        gradient_descent_loss = torch.load('model_training_information/gradient_descent_loss.pt')
+        final_converged_loss = gradient_descent_loss[-1]
+        
         #final_converged_loss=0
-        _, newton_method_loss_vals = self.newton_method_exact(8)
+        
+        _, newton_method_loss_vals = newton_method(8)
+        
+        torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/biconjugate_loss.pt')
         
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
 
         helpers.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
-        'Number of Epochs', 'Suboptimality', 'a9a_suboptimality_approx_hessian.png')
-        
+        'Number of Epochs', 'Suboptimality', filename)
+
+
 
 
 if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
+    a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
+
 
     # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)

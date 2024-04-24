@@ -1,5 +1,7 @@
 import numpy as np 
 import torch
+import matplotlib.pyplot as plt
+import os 
 
 
 def plot_curve(x_axis_vals, y_axis_vals, x_axis_title, y_axis_title, file_name):
@@ -9,6 +11,12 @@ def plot_curve(x_axis_vals, y_axis_vals, x_axis_title, y_axis_title, file_name):
     plt.xlabel(f'{x_axis_title}')
     plt.ylabel(f'{y_axis_title}')
     plt.savefig(f'plots/{file_name}.png')
+
+def write_to_file(data_list, file_path):
+    with open(file_path, 'w') as file:
+        for num in data_list:
+            file.write(num)
+            file.write('\n')
 
 
 def read_a9a_dataset(file_path):
