@@ -174,8 +174,8 @@ class A9A_Analysis:
         
         #final_converged_loss=0
         
-        _, newton_method_loss_vals = newton_method(8)
-        
+        _, newton_method_loss_vals = newton_method(15)
+         
         torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/biconjugate_loss.pt')
         
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
