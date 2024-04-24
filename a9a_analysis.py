@@ -84,16 +84,16 @@ class A9A_Analysis:
         return w, loss_values
 
 
-    def biconjugate_gradient_stable(self, w, b):
+    def biconjugate_gradient_stable(self, w, b, tol=10**-3):
 
         # A = hessian 
-        num_iter = 15
+        num_iter = 1
         
-        x = [None] * num_iter 
-        r = [None] * num_iter
-        r_hat = [None] * num_iter
-        rho = [None] * num_iter
-        p = [None] * num_iter
+        x = [None]
+        r = [None]
+        r_hat = [None]
+        rho = [None]
+        p = [None]
 
         # initialize parameters
         x[0] = torch.rand(b.shape[0])
@@ -105,29 +105,32 @@ class A9A_Analysis:
         rho[0] = (r_hat[0].T @ r[0])
         p[0] = r[0]
 
-        for i in range(1, num_iter):
 
-            v = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, p[i - 1])[1]
+        while True:
+
+            v = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, p[-1])[1]
             # v = A @ p[i - 1]
-            alpha = rho[i - 1]/(r_hat[0].T @ v)
-            h = x[i - 1] + (alpha * p[i - 1])
-            s = r[i - 1] - (alpha * v)
+            alpha = rho[-1]/(r_hat[0].T @ v)
+            h = x[-1] + (alpha * p[-1])
+            s = r[-1] - (alpha * v)
 
-            dist_to_solution = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[i - 1])[1]
-            if (torch.norm(dist_to_solution)) <= 10**-3:
-                return x[i - 1]
+            dist_to_solution = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[-1])[1]
+            if (torch.norm(dist_to_solution)) <= tol:
+                return x[-1], num_iter
 
             t = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, s)[1]
             #t = A @ s 
             omega = (t.T @ s)/(t.T @ t)
-            x[i] = h + (omega * s)
-            r[i] = s - (omega * t)
-            rho[i] = (r_hat[0].T @ r[i])
+            x.append(h + (omega * s))
+            r.append(s - (omega * t))
+            rho.append(r_hat[0].T @ r[-1])
 
-            beta = (rho[i]/rho[i - 1]) * (alpha/omega)
-            p[i] = r[i] + (beta * (p[i - 1] - (omega * v)))
+            beta = (rho[-1]/rho[-2]) * (alpha/omega)
+            p.append(r[-1] + (beta * (p[-1] - (omega * v))))
+
+            num_iter += 1
         
-        return x[-1]
+        return x[-1], num_iter
 
 
     def sketch_newton_method(self, num_epochs):
@@ -153,7 +156,7 @@ class A9A_Analysis:
             
             # solve the linear system with conjugate gradient using hessian vector products
 
-            update = self.biconjugate_gradient_stable(w, gradient)
+            update, _ = self.biconjugate_gradient_stable(w, gradient, 0.001)
             #update = self.conjugate_gradient_hessian_vp(gradient, w)
             w = w - (0.1 * update) 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
