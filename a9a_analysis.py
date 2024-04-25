@@ -6,6 +6,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import hessian
 import scipy
+import time 
 import os
             
 class A9A_Analysis:
@@ -65,6 +66,7 @@ class A9A_Analysis:
         w = torch.rand(self.X.shape[0])
         loss_values = {}
 
+        
         for epoch in tqdm(range(num_epochs)):
 
             # compute the gradient 
@@ -99,7 +101,6 @@ class A9A_Analysis:
         x[0] = torch.rand(b.shape[0])
 
         r[0] = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[0])[1]
-        #r[0] = b - (A @ x[0])
         r_hat[0] = torch.clone(r[0])
 
         rho[0] = (r_hat[0].T @ r[0])
@@ -109,7 +110,6 @@ class A9A_Analysis:
         while True:
 
             v = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, p[-1])[1]
-            # v = A @ p[i - 1]
             alpha = rho[-1]/(r_hat[0].T @ v)
             h = x[-1] + (alpha * p[-1])
             s = r[-1] - (alpha * v)
@@ -119,7 +119,6 @@ class A9A_Analysis:
                 return x[-1], num_iter
 
             t = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, s)[1]
-            #t = A @ s 
             omega = (t.T @ s)/(t.T @ t)
             x.append(h + (omega * s))
             r.append(s - (omega * t))
@@ -131,7 +130,6 @@ class A9A_Analysis:
             num_iter += 1
         
         return x[-1], num_iter
-
 
     def sketch_newton_method(self, num_epochs):
         """
@@ -148,22 +146,37 @@ class A9A_Analysis:
         loss_values = {}
         for epoch in tqdm(range(num_epochs)):
 
-            # compute the gradient 
+            # compute the gradient, hessian
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
             hessian = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
             
+            # add regularization to hessian to ensure it is positive definite
             hessian = hessian + (0.01 * torch.eye(len(hessian)))
             
-            # solve the linear system with conjugate gradient using hessian vector products
-
-            update, _ = self.biconjugate_gradient_stable(w, gradient, 0.001)
-            #update = self.conjugate_gradient_hessian_vp(gradient, w)
+            # solve the linear system with stable biconjugate gradient method using hessian vector products
+            update, _ = self.biconjugate_gradient_stable(w, gradient, 10)
             w = w - (0.1 * update) 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
-            print(loss_val)
+            #print(loss_val)
 
         return w, loss_values
+
+
+
+    def measure_wall_clock_time(self, num_epochs):
+        # start_time = time.time()
+        # _ = self.newton_method_exact(num_epochs) 
+        # end = time.time()
+
+        # print(end - start_time)
+
+        start = time.time()
+        _ = self.sketch_newton_method(num_epochs)
+        end_time = time.time()
+        print(end_time - start)
+
+        pass 
 
 
     def plot_suboptimality(self, filename, newton_method):
@@ -171,11 +184,8 @@ class A9A_Analysis:
         
         #gradient_descent_loss = self.gradient_descent()
         #torch.save(torch.tensor(gradient_descent_loss), 'model_training_information/gradient_descent_loss.pt')
-        
         gradient_descent_loss = torch.load('model_training_information/gradient_descent_loss.pt')
         final_converged_loss = gradient_descent_loss[-1]
-        
-        #final_converged_loss=0
         
         _, newton_method_loss_vals = newton_method(15)
          
@@ -194,9 +204,9 @@ class A9A_Analysis:
 if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
-    a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
-    a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
-
+    #a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
+    #a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
+    a9a.measure_wall_clock_time(5)
     # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)
     # a9a.plot_suboptimality()
