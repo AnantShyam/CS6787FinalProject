@@ -179,7 +179,8 @@ class A9A_Analysis:
         
         _, newton_method_loss_vals = newton_method(15)
          
-        torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/biconjugate_loss.pt')
+        # torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/biconjugate_loss.pt')
+        torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/newton_method_loss_a9a.pt')
         
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
@@ -194,7 +195,7 @@ if __name__ == "__main__":
     a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
     a9a = A9A_Analysis(a9a_dataset, labels)
     a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
-
+    a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
 
     # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)
