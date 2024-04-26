@@ -11,9 +11,11 @@ import os
             
 class A9A_Analysis:
 
-    def __init__(self, X, y):
-        self.X = X 
-        self.y = y
+    def __init__(self, X_train, y_train, X_test=None, y_test=None):
+        self.X = X_train    
+        self.y = y_train 
+        self.X_test = X_test 
+        self.y_test = y_test
 
     def l2_regularized_logistic_regression_loss(self,w):
         loss = 0
@@ -179,6 +181,13 @@ class A9A_Analysis:
         pass 
 
 
+    def test_model(self, weight_vector):
+        num_correct = 0
+        num_total = 0
+
+        n = len(self.y)
+
+
     def plot_suboptimality(self, filename, newton_method):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
         
@@ -202,8 +211,14 @@ class A9A_Analysis:
 
 
 if __name__ == "__main__":
-    a9a_dataset, labels = helpers.read_a9a_dataset('data/a9a_train.txt')
-    a9a = A9A_Analysis(a9a_dataset, labels)
+    a9a_dataset_train, labels_train = helpers.read_a9a_dataset('data/a9a_train.txt')
+    a9a_dataset_test, labels_test = helpers.read_a9a_dataset('data/a9a_test.txt')
+
+
+
+
+
+    a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     #a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
     #a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
     a9a.measure_wall_clock_time(5)

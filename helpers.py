@@ -47,8 +47,9 @@ def read_a9a_dataset(file_path):
     dataset = np.stack(dataset, axis=0).T
     labels = np.array(labels)
 
-    assert dataset.shape == (124, 32561)
-    assert labels.shape == (32561,)
+    # depending on whether we are reading in train data or test data
+    assert dataset.shape == (124, 32561) or dataset.shape == (124, 16281) 
+    assert labels.shape == (32561,) or labels.shape == (16281,)
 
     return torch.from_numpy(dataset).to(torch.float32), torch.from_numpy(labels).to(torch.float32)
 
