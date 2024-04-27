@@ -10,7 +10,7 @@ def plot_curve(x_axis_vals, y_axis_vals, x_axis_title, y_axis_title, file_name):
     plt.plot(x_axis_vals, y_axis_vals)
     plt.xlabel(f'{x_axis_title}')
     plt.ylabel(f'{y_axis_title}')
-    plt.savefig(f'plots/{file_name}.png')
+    plt.savefig(f'../plots/{file_name}.png')
 
 def write_to_file(data_list, file_path):
     with open(file_path, 'w') as file:

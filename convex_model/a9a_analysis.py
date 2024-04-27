@@ -203,13 +203,13 @@ class A9A_Analysis:
         
         #gradient_descent_loss = self.gradient_descent()
         #torch.save(torch.tensor(gradient_descent_loss), 'model_training_information/gradient_descent_loss.pt')
-        gradient_descent_loss = torch.load('model_training_information/gradient_descent_loss.pt')
+        gradient_descent_loss = torch.load('../model_training_information/gradient_descent_loss.pt')
         final_converged_loss = gradient_descent_loss[-1]
         
         _, newton_method_loss_vals = newton_method(15)
          
         # torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/biconjugate_loss.pt')
-        torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/newton_method_loss_a9a.pt')
+        torch.save(torch.tensor(list(newton_method_loss_vals.values())), '../model_training_information/newton_method_loss_a9a.pt')
         
         loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
                                 for i in range(1, len(newton_method_loss_vals))}
@@ -221,16 +221,20 @@ class A9A_Analysis:
 
 
 if __name__ == "__main__":
-    a9a_dataset_train, labels_train = helpers.read_a9a_dataset('data/a9a_train.txt')
-    a9a_dataset_test, labels_test = helpers.read_a9a_dataset('data/a9a_test.txt')
+    a9a_dataset_train, labels_train = helpers.read_a9a_dataset('../data/a9a_train.txt')
+    a9a_dataset_test, labels_test = helpers.read_a9a_dataset('../data/a9a_test.txt')
 
 
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     #a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
     #a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
     #a9a.measure_wall_clock_time(5)
-    w, _ = a9a.gradient_descent()
+    #w, _ = a9a.gradient_descent()
     #print(a9a.test_model(w))
+
+    w, _ = a9a.sketch_newton_method(8)
+    print("-----")
+    print(a9a.test_model(w))
     # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)
     # a9a.plot_suboptimality()
