@@ -11,7 +11,7 @@ import os
             
 class A9A_Analysis:
 
-    def __init__(self, X_train, y_train, X_test=None, y_test=None):
+    def __init__(self, X_train, y_train, X_test, y_test):
         self.X = X_train    
         self.y = y_train 
         self.X_test = X_test 
@@ -57,12 +57,13 @@ class A9A_Analysis:
             gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
             w = w - (alpha * gradient)
             curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
+            print(curr_loss)
             if abs(curr_loss - loss_values[-1]) <= tolerance:
                 break
             else:
                 loss_values.append(curr_loss)
 
-        return loss_values[1:]
+        return w, loss_values[1:]
         
     def newton_method_exact(self, num_epochs):
         w = torch.rand(self.X.shape[0])
@@ -183,9 +184,18 @@ class A9A_Analysis:
 
     def test_model(self, weight_vector):
         num_correct = 0
-        num_total = 0
 
-        n = len(self.y)
+        n = len(self.y_test)
+        for i in range(n):
+            training_example, label = self.X_test[:, i], self.y_test[i]
+            prediction = torch.sign(weight_vector.T @ training_example).sign()
+            # print(prediction)
+            # print(label)
+            # print('----')
+            if prediction == label:
+                num_correct += 1
+        
+        return float(num_correct)/float(n)
 
 
     def plot_suboptimality(self, filename, newton_method):
@@ -215,13 +225,12 @@ if __name__ == "__main__":
     a9a_dataset_test, labels_test = helpers.read_a9a_dataset('data/a9a_test.txt')
 
 
-
-
-
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     #a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
     #a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
-    a9a.measure_wall_clock_time(5)
+    #a9a.measure_wall_clock_time(5)
+    w, _ = a9a.gradient_descent()
+    #print(a9a.test_model(w))
     # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)
     # a9a.plot_suboptimality()
