@@ -157,7 +157,7 @@ class A9A_Analysis:
             hessian = hessian + (0.01 * torch.eye(len(hessian)))
             
             # solve the linear system with stable biconjugate gradient method using hessian vector products
-            update, _ = self.biconjugate_gradient_stable(w, gradient, 10)
+            update, _ = self.biconjugate_gradient_stable(w, gradient, 10000)
             w = w - (0.1 * update) 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
@@ -167,7 +167,7 @@ class A9A_Analysis:
 
 
 
-    def measure_wall_clock_time(self, num_epochs):
+    def measure_wall_clock_time(self, optimization_method, num_epochs):
         # start_time = time.time()
         # _ = self.newton_method_exact(num_epochs) 
         # end = time.time()
@@ -175,7 +175,7 @@ class A9A_Analysis:
         # print(end - start_time)
 
         start = time.time()
-        _ = self.sketch_newton_method(num_epochs)
+        _ = optimization_method(num_epochs)
         end_time = time.time()
         print(end_time - start)
 
@@ -228,13 +228,15 @@ if __name__ == "__main__":
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     #a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
     #a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
-    #a9a.measure_wall_clock_time(5)
+    
+    a9a.measure_wall_clock_time(a9a.sketch_newton_method, 15)
+    a9a.measure_wall_clock_time(a9a.newton_method_exact, 15)
     #w, _ = a9a.gradient_descent()
     #print(a9a.test_model(w))
 
-    w, _ = a9a.sketch_newton_method(8)
-    print("-----")
-    print(a9a.test_model(w))
+    #w, _ = a9a.sketch_newton_method(8)
+    #print("-----")
+    #print(a9a.test_model(w))
     # print(a9a.sketch_newton_method(8))
     # print(a9a.X.shape)
     # a9a.plot_suboptimality()
