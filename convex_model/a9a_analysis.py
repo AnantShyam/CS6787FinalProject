@@ -28,7 +28,7 @@ class A9A_Analysis:
 
             loss = loss + exp_term
 
-        regularization_constant = 0.05
+        regularization_constant = 0
         regularization_term = (regularization_constant * torch.pow(torch.norm(w), 2)/2.0)
         total_loss = (loss/n) + regularization_term
         return total_loss
@@ -38,7 +38,7 @@ class A9A_Analysis:
 
     def gradient_descent(self):
         d, n = self.X.shape
-        w = torch.rand(d)
+        w = torch.randn(d)
 
         # compute the largest eigenvalue of Hessian at w = 0, hessian = 124 x 124
         # H = 1/n  X^T P X, P = 0.25 I when w = 0
@@ -49,15 +49,17 @@ class A9A_Analysis:
     
         largest_eigenvalue = torch.max(eigenvalues_hessian_w_equals_0)
 
-        alpha = 2/largest_eigenvalue
+        alpha = 1/largest_eigenvalue
         loss_values = [float('inf')]
 
         tolerance = 10**(-16)
         while True:
-            gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
+            # gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
+            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) # this does not have regularization
             w = w - (alpha * gradient)
             curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
-            print(curr_loss)
+            print("acc", self.test_model(w), "loss", curr_loss)
+            #print(curr_loss)
             if abs(curr_loss - loss_values[-1]) <= tolerance:
                 break
             else:
@@ -183,19 +185,17 @@ class A9A_Analysis:
 
 
     def test_model(self, weight_vector):
-        num_correct = 0
-
-        n = len(self.y_test)
-        for i in range(n):
-            training_example, label = self.X_test[:, i], self.y_test[i]
-            prediction = torch.sign(weight_vector.T @ training_example).sign()
-            # print(prediction)
-            # print(label)
-            # print('----')
-            if prediction == label:
-                num_correct += 1
+        acc = (np.sign((self.X.T)@weight_vector) == self.y).float().mean()
+        # for i in range(n):
+        #     training_example, label = self.X[:, i], self.y[i]
+        #     prediction = torch.sign(weight_vector.T @ training_example)
+        #     # print(prediction)
+        #     # print(label)
+        #     # print('----')
+        #     if prediction == label:
+        #         num_correct += 1
         
-        return float(num_correct)/float(n)
+        return acc #float(num_correct)/float(n)
 
 
     def plot_suboptimality(self, filename, newton_method):
@@ -229,10 +229,10 @@ if __name__ == "__main__":
     #a9a.plot_suboptimality('biconjugate_gradient_suboptimality.png', a9a.sketch_newton_method)
     #a9a.plot_suboptimality('newton_method_suboptimality_a9a.png', a9a.newton_method_exact)
     
-    a9a.measure_wall_clock_time(a9a.sketch_newton_method, 15)
-    a9a.measure_wall_clock_time(a9a.newton_method_exact, 15)
-    #w, _ = a9a.gradient_descent()
-    #print(a9a.test_model(w))
+    #a9a.measure_wall_clock_time(a9a.sketch_newton_method, 15)
+    #a9a.measure_wall_clock_time(a9a.newton_method_exact, 15)
+    w, _ = a9a.gradient_descent()
+    print(a9a.test_model(w))
 
     #w, _ = a9a.sketch_newton_method(8)
     #print("-----")
