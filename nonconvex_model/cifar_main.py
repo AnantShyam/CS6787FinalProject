@@ -78,7 +78,7 @@ def main():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    dataset_path = '/Users/cba/Desktop/cs_6787/final_project/CS6787FinalProject/data/cifar-10-batches-py'
+    dataset_path = 'https://github.com/AnantShyam/CS6787FinalProject/tree/b123f0727b573ee06be5c431238f358b72565ed1/nonconvex_model/data/cifar-10-batches-py'
     train_dataset = CIFAR10Dataset(root_dir=dataset_path, train=True, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2)
 
