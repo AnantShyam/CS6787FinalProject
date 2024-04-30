@@ -22,7 +22,6 @@ class A9A_Analysis:
         n = len(self.y)
         for i in range(n):
             training_example, label = self.X[:, i], self.y[i]
-            
             concat_tensor = torch.tensor([0, (-w.T @ training_example) * label])
             exp_term = torch.logsumexp(concat_tensor, 0)
 
@@ -49,6 +48,7 @@ class A9A_Analysis:
     
         largest_eigenvalue = torch.max(eigenvalues_hessian_w_equals_0)
 
+        # should this be 2/largest_eigenvalue?
         alpha = 1/largest_eigenvalue
         loss_values = [float('inf')]
 
@@ -58,6 +58,7 @@ class A9A_Analysis:
             gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) # this does not have regularization
             w = w - (alpha * gradient)
             curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
+
             print("acc", self.test_model(w), "loss", curr_loss)
             #print(curr_loss)
             if abs(curr_loss - loss_values[-1]) <= tolerance:
@@ -67,21 +68,38 @@ class A9A_Analysis:
 
         return w, loss_values[1:]
         
+    def form_hessian(self, w):
+        d = self.X.shape[0]
+        hessian = torch.zeros(d, d)
+        #print(hessian.shape)
+        for i in range(d):
+            # hard coded for train dataset
+            y_i, x_i = self.y[i], self.X[:, i].reshape((124, 1))
+            term1 = torch.sigmoid(-y_i * (w.T @ x_i)) * (1 - torch.sigmoid(-y_i * (w.T @ x_i)))
+            hessian = hessian + (term1 * (x_i @ x_i.T))
+        hessian = hessian/d
+
+        hessian +=  (0.01 * torch.eye(len(hessian)))
+        return hessian
+
+
     def newton_method_exact(self, num_epochs):
         w = torch.rand(self.X.shape[0])
         loss_values = {}
 
-        
         for epoch in tqdm(range(num_epochs)):
 
             # compute the gradient 
-            gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
+            #gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
+            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1)
 
             # compute the hessian
-            hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            #hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            hessian_matrix = self.form_hessian(w)
             hessian_num_rows, hessian_num_columns = hessian_matrix.shape
 
             # update weights 
+            #print(hessian_matrix)
             hessian_inverse = torch.inverse(hessian_matrix)
             w = w - (0.5 * (hessian_inverse @ gradient))
 
@@ -152,12 +170,17 @@ class A9A_Analysis:
         for epoch in tqdm(range(num_epochs)):
 
             # compute the gradient, hessian
-            gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
+            #gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
+            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1)
+
             hessian = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
             
             # add regularization to hessian to ensure it is positive definite
+
+            # hessian is all zero!!
             hessian = hessian + (0.01 * torch.eye(len(hessian)))
-            
+            print(hessian)
+
             # solve the linear system with stable biconjugate gradient method using hessian vector products
             update, _ = self.biconjugate_gradient_stable(w, gradient, 10000)
             w = w - (0.1 * update) 
@@ -183,20 +206,9 @@ class A9A_Analysis:
 
         pass 
 
-
     def test_model(self, weight_vector):
-        acc = (np.sign((self.X.T)@weight_vector) == self.y).float().mean()
-        # for i in range(n):
-        #     training_example, label = self.X[:, i], self.y[i]
-        #     prediction = torch.sign(weight_vector.T @ training_example)
-        #     # print(prediction)
-        #     # print(label)
-        #     # print('----')
-        #     if prediction == label:
-        #         num_correct += 1
-        
-        return acc #float(num_correct)/float(n)
-
+        accuracy = (np.sign((self.X.T)@weight_vector) == self.y).float().mean()
+        return accuracy
 
     def plot_suboptimality(self, filename, newton_method):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
@@ -231,9 +243,12 @@ if __name__ == "__main__":
     
     #a9a.measure_wall_clock_time(a9a.sketch_newton_method, 15)
     #a9a.measure_wall_clock_time(a9a.newton_method_exact, 15)
-    w, _ = a9a.gradient_descent()
-    print(a9a.test_model(w))
+    #print(a9a.X[:, 0].shape)
+    #w, _ = a9a.sketch_newton_method(8)
+    #print(a9a.test_model(w))
 
+    w, _ = a9a.newton_method_exact(8)
+    print(a9a.test_model(w))
     #w, _ = a9a.sketch_newton_method(8)
     #print("-----")
     #print(a9a.test_model(w))
