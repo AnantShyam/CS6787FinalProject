@@ -6,6 +6,7 @@ import cifar_model
 import time
 from torch.nn import functional as F
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 def load_data():
     # normalize data 
@@ -60,15 +61,20 @@ def train_model_gradient_descent(model, train_data_loader, num_epochs=10):
     return model, loss_values
             
     
-
+def plot_values(x_vals, y_vals, x_axis_title, y_axis_title, file_path_name):
+    plt.plot(x_vals, y_vals)
+    plt.xlabel(f'{x_axis_title}')
+    plt.ylabel(f'{y_axis_title}')
+    plt.savefig(file_path_name)
 
 # w vector = w .parameters
 # torch.nn.utils.parameters_to_vector()
 if __name__ == "__main__":
     train_data_loader, test_data_loader = create_train_test_dataloaders(32)
     initial_model = cifar_model.CIFAR10Net()
-    trained_model = train_model(initial_model, train_data_loader)
-    torch.save()
+    trained_model, train_loss_values = train_model_gradient_descent(initial_model, train_data_loader)
+    plot_values([i for i in range(1, 11)], train_loss_values, 'Epoch Number', 'Train Loss Values', 
+    'nonconvex_model_plots/train_loss.png')
     
 
 
