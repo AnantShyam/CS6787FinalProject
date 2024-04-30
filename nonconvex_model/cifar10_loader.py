@@ -6,11 +6,13 @@ import torch
 from torch.utils.data import Dataset
 
 class CIFAR10Dataset(Dataset):
+    
     def __init__(self, root_dir, train=True, transform=None):
         self.root_dir = root_dir
         self.transform = transform
         self.data = []
         self.labels = []
+        
         if train:
             for i in range(1, 6):  # Load all training batches
                 data_dict = self.unpickle(os.path.join(root_dir, f'data_batch_{i}'))
@@ -25,14 +27,17 @@ class CIFAR10Dataset(Dataset):
             self.data = data_dict[b'data']
             self.labels = data_dict[b'labels']
 
+    
     def unpickle(self, file):
         with open(file, 'rb') as fo:
             dict = pickle.load(fo, encoding='bytes')
         return dict
 
+    
     def __len__(self):
         return len(self.labels)
 
+    
     def __getitem__(self, idx):
         image = self.data[idx].reshape(3, 32, 32).transpose((1, 2, 0))  # convert to HWC format
         if self.transform:
