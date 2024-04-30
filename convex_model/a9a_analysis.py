@@ -123,7 +123,10 @@ class A9A_Analysis:
         # initialize parameters
         x[0] = torch.rand(b.shape[0])
 
-        r[0] = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[0])[1]
+        hessian = self.form_hessian(w)
+        #print(hessian)
+        #r[0] = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[0])[1]
+        r[0] = b - (hessian @ x[0])
         r_hat[0] = torch.clone(r[0])
 
         rho[0] = (r_hat[0].T @ r[0])
@@ -132,16 +135,19 @@ class A9A_Analysis:
 
         while True:
 
-            v = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, p[-1])[1]
+            #v = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, p[-1])[1]
+            v = hessian @ p[-1]
             alpha = rho[-1]/(r_hat[0].T @ v)
             h = x[-1] + (alpha * p[-1])
             s = r[-1] - (alpha * v)
 
-            dist_to_solution = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[-1])[1]
+            #dist_to_solution = b - torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, x[-1])[1]
+            dist_to_solution = b - (hessian @ x[-1])
             if (torch.norm(dist_to_solution)) <= tol:
                 return x[-1], num_iter
 
-            t = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, s)[1]
+            #t = torch.autograd.functional.hvp(self.l2_regularized_logistic_regression_loss, w, s)[1]
+            t = hesian @ s
             omega = (t.T @ s)/(t.T @ t)
             x.append(h + (omega * s))
             r.append(s - (omega * t))
@@ -173,17 +179,17 @@ class A9A_Analysis:
             #gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
             gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1)
 
-            hessian = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
+            #hessian = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
             
             # add regularization to hessian to ensure it is positive definite
 
             # hessian is all zero!!
-            hessian = hessian + (0.01 * torch.eye(len(hessian)))
-            print(hessian)
+            #hessian = hessian + (0.01 * torch.eye(len(hessian)))
+            #print(hessian)
 
             # solve the linear system with stable biconjugate gradient method using hessian vector products
             update, _ = self.biconjugate_gradient_stable(w, gradient, 10000)
-            w = w - (0.1 * update) 
+            w = w - (0.01 * update) 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
             #print(loss_val)
@@ -244,11 +250,11 @@ if __name__ == "__main__":
     #a9a.measure_wall_clock_time(a9a.sketch_newton_method, 15)
     #a9a.measure_wall_clock_time(a9a.newton_method_exact, 15)
     #print(a9a.X[:, 0].shape)
-    #w, _ = a9a.sketch_newton_method(8)
-    #print(a9a.test_model(w))
-
-    w, _ = a9a.newton_method_exact(8)
+    w, _ = a9a.sketch_newton_method(8)
     print(a9a.test_model(w))
+
+    #w, _ = a9a.newton_method_exact(8)
+    #print(a9a.test_model(w))
     #w, _ = a9a.sketch_newton_method(8)
     #print("-----")
     #print(a9a.test_model(w))
