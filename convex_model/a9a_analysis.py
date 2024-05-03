@@ -16,6 +16,7 @@ class A9A_Analysis:
         self.y = y_train 
         self.X_test = X_test 
         self.y_test = y_test
+        self.regularization = 0.01
 
     def l2_regularized_logistic_regression_loss(self,w):
         loss = 0
@@ -27,8 +28,7 @@ class A9A_Analysis:
 
             loss = loss + exp_term
 
-        regularization_constant = 0
-        regularization_term = (regularization_constant * torch.pow(torch.norm(w), 2)/2.0)
+        regularization_term = (self.regularization * torch.pow(torch.norm(w), 2)/2.0)
         total_loss = (loss/n) + regularization_term
         return total_loss
 
@@ -55,7 +55,7 @@ class A9A_Analysis:
         tolerance = 10**(-16)
         while True:
             # gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
-            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) # this does not have regularization
+            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) + (self.regularization * w) 
             w = w - (alpha * gradient)
             curr_loss = self.l2_regularized_logistic_regression_loss(w).item()
 
@@ -79,7 +79,7 @@ class A9A_Analysis:
             hessian = hessian + (term1 * (x_i @ x_i.T))
         hessian = hessian/d
 
-        hessian +=  (0.01 * torch.eye(len(hessian)))
+        hessian +=  (self.regularization * torch.eye(len(hessian)))
         return hessian
 
 
@@ -91,7 +91,7 @@ class A9A_Analysis:
 
             # compute the gradient 
             #gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w)
-            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1)
+            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) + (self.regularization * w)
 
             # compute the hessian
             #hessian_matrix = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
@@ -101,10 +101,14 @@ class A9A_Analysis:
             # update weights 
             #print(hessian_matrix)
             hessian_inverse = torch.inverse(hessian_matrix)
-            w = w - (0.5 * (hessian_inverse @ gradient))
+
+            # do backtracking line search - Armijo line search - algorithm 3.1 in nocedal and wright
+            w = w - (0.1 * (hessian_inverse @ gradient))
 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
+            print(self.test_model(w))
+            print(loss_val)
         
         return w, loss_values
 
@@ -177,10 +181,7 @@ class A9A_Analysis:
 
             # compute the gradient, hessian
             #gradient = torch.autograd.functional.jacobian(self.l2_regularized_logistic_regression_loss, w) 
-            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1)
-
-            #hessian = torch.func.hessian(self.l2_regularized_logistic_regression_loss)(w)
-            
+            gradient = (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) + (self.regularization * w)
             # add regularization to hessian to ensure it is positive definite
 
             # hessian is all zero!!
@@ -250,7 +251,7 @@ if __name__ == "__main__":
     #a9a.measure_wall_clock_time(a9a.sketch_newton_method, 15)
     #a9a.measure_wall_clock_time(a9a.newton_method_exact, 15)
     #print(a9a.X[:, 0].shape)
-    w, _ = a9a.sketch_newton_method(8)
+    w, _ = a9a.newton_method_exact(16)
     print(a9a.test_model(w))
 
     #w, _ = a9a.newton_method_exact(8)
