@@ -82,7 +82,7 @@ def biconjugate_gradient_stable(A, b):
 A = torch.rand(10, 10)
 b = torch.rand(10)
 print(torch.inverse(A) @ b)
-print(biconjugate_gradient_stable(A, b))
+print(biconjugate_gradient_stable_hessian_vp(A, b))
 
 
 
