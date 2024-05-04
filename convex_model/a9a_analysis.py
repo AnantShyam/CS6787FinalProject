@@ -108,6 +108,7 @@ class A9A_Analysis:
     def newton_method_exact(self, num_epochs):
         w = torch.rand(self.X.shape[0])
         loss_values = {}
+        accuracy_values = {}
 
         start = time.time()
         for epoch in tqdm(range(num_epochs)):
@@ -123,14 +124,18 @@ class A9A_Analysis:
             # do backtracking line search - Armijo line search - algorithm 3.1 in nocedal and wright
             update = hessian_inverse @ gradient
             alpha = self.backtrack_line_search(w, update)
-            w = w - (alpha * (update))
 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+            accuracy_values[epoch + 1] = self.test_model(w)
+            w = w - (alpha * (update))
+
+            #loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
+            
 
             #print('acc', self.test_model(w), 'loss val', loss_val)
         end = time.time()
-        return w, loss_values, end-start
+        return w, loss_values, accuracy_values, end-start
 
 
     def compute_gradient(self, w, is_train=True):
@@ -144,6 +149,7 @@ class A9A_Analysis:
     def conjugate_residual(self, num_epochs):
         w = torch.rand(self.X.shape[0])
         loss_values = {}
+        accuracy_values = {}
 
         start = time.time()
         for epoch in range(num_epochs):
@@ -153,17 +159,22 @@ class A9A_Analysis:
             update = krylov.conjugate_residual(hessian_matrix, gradient)
             alpha = self.backtrack_line_search(w, update)
 
-            w = w - (alpha * update)
+            accuracy_values[epoch + 1] = self.test_model(w)
             loss_values[epoch + 1] = self.l2_regularized_logistic_regression_loss(w).item()
+
+            w = w - (alpha * update)
+            
+            
             #print(self.test_model(w))
         end = time.time()
 
-        return w, loss_values, end-start
+        return w, loss_values, accuracy_values, end-start
 
 
     def gmres(self, num_epochs):
         w = torch.rand(self.X.shape[0]) 
         loss_values = {}
+        accuracy_values = {}
 
         start = time.time()
         for epoch in tqdm(range(num_epochs)):
@@ -178,12 +189,17 @@ class A9A_Analysis:
 
             #alpha = 0.09 # do a line search here
             alpha = self.backtrack_line_search(w, update)
-            w = w - (alpha * update)
+            accuracy_values[epoch + 1] = self.test_model(w)
+
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+
+            w = w - (alpha * update)
+            #loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
+            
             #print("loss", self.l2_regularized_logistic_regression_loss(w).item(), "acc", self.test_model(w))
         end = time.time()
-        return w, loss_values, end-start
+        return w, loss_values, accuracy_values, end-start
 
 
     def test_model(self, weight_vector, is_train=True):
@@ -193,20 +209,29 @@ class A9A_Analysis:
         else:
             accuracy = (np.sign((self.X_test.T)@weight_vector) == self.y_test).float().mean()
             return accuracy
+    
 
-    def plot_losses_all_newton_methods(self, filename, num_epochs):
+    def plot_losses_or_accuracies_all_newton_methods(self, filename, num_epochs, plot_losses=True):
         newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
         for newton_method_name, newton_method in newton_methods.items():
-            _, loss_vals, _ = newton_method(num_epochs)
+            _, loss_vals, accuracy_vals, _ = newton_method(num_epochs)
             epochs = [i for i in range(1, num_epochs + 1)]
-            loss_values = [val for _, val in loss_vals.items()]
-            plt.plot(epochs, loss_values, label=newton_method_name)
+            loss_values = [val for _, val in loss_vals.items()] 
+            accuracy_values = [val for _, val in accuracy_vals.items()]
+            if plot_losses:
+                plt.plot(epochs, loss_values, label=newton_method_name)
+            else:
+                plt.plot(epochs, accuracy_values, label=newton_method_name)
         plt.legend()
         plt.xlabel('Number of Epochs')
-        plt.ylabel('Loss Values')
-        plt.title('Loss values vs Epochs')
+        if plot_losses:
+            plt.ylabel('Loss Values')
+            plt.title('Loss values vs Epochs')
+        else:
+            plt.ylabel('Accuracy Values')
+            plt.title('Accuracy Values vs Epochs')
         plt.savefig(f'convex_model_plots/{filename}')
         
 
@@ -239,7 +264,8 @@ if __name__ == "__main__":
 
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     
-    a9a.plot_losses_all_newton_methods('loss_vals.png', 10)
+    #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
+    a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
 
     #_ = a9a.conjugate_residual(10)
     # print(time)
