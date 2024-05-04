@@ -235,24 +235,34 @@ class A9A_Analysis:
         plt.savefig(f'convex_model_plots/{filename}')
         
 
-    def plot_suboptimality(self, filename, newton_method):
+    def plot_suboptimality_all_newton_methods(self, filename, num_epochs):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
-        
-        #gradient_descent_loss = self.gradient_descent()
-        #torch.save(torch.tensor(gradient_descent_loss), 'model_training_information/gradient_descent_loss.pt')
-        gradient_descent_loss = torch.load('../model_training_information/gradient_descent_loss.pt')
+        gradient_descent_loss = torch.load('model_statistics/gradient_descent_loss.pt')
         final_converged_loss = gradient_descent_loss[-1]
+
+        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
+        self.gmres, 'Conjugate Residual': self.conjugate_residual}
+
+        for newton_method_name, newton_method in newton_methods.items():
+            _, loss_vals, _, _ = newton_method(num_epochs)
+            epochs = [i for i in range(1, num_epochs + 1)]
+            loss_differences = [abs(final_converged_loss - loss_val) for _, loss_val in loss_vals.items()]
+            plt.plot(epochs, loss_differences, label=newton_method_name)
+        plt.legend()
+        plt.xlabel('Number of Epochs')
+        plt.ylabel('Suboptimality')
+        plt.savefig(f'convex_model_plots/{filename}')
         
-        _, newton_method_loss_vals = newton_method(15)
+        #_, newton_method_loss_vals = newton_method(15)
          
         # torch.save(torch.tensor(list(newton_method_loss_vals.values())), 'model_training_information/biconjugate_loss.pt')
-        torch.save(torch.tensor(list(newton_method_loss_vals.values())), '../model_training_information/newton_method_loss_a9a.pt')
+        # torch.save(torch.tensor(list(newton_method_loss_vals.values())), '../model_training_information/newton_method_loss_a9a.pt')
         
-        loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
-                                for i in range(1, len(newton_method_loss_vals))}
+        # loss_differences = {i: abs(newton_method_loss_vals[i] - final_converged_loss) 
+        #                         for i in range(1, len(newton_method_loss_vals))}
 
-        helpers.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
-        'Number of Epochs', 'Suboptimality', filename)
+        # helpers.plot_curve(list(loss_differences.keys()), list(loss_differences.values()), 
+        # 'Number of Epochs', 'Suboptimality', filename)
 
 
 
@@ -265,7 +275,8 @@ if __name__ == "__main__":
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     
     #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
-    a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
+    #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
+    a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10)
 
     #_ = a9a.conjugate_residual(10)
     # print(time)
