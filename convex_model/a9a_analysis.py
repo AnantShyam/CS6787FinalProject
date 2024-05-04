@@ -8,6 +8,7 @@ import hessian
 import scipy
 import time 
 import os
+import krylov
             
 class A9A_Analysis:
 
@@ -131,12 +132,33 @@ class A9A_Analysis:
         end = time.time()
         return w, loss_values, end-start
 
+
     def compute_gradient(self, w, is_train=True):
         if is_train:
             return (torch.sigmoid(-self.y*((self.X.T)@w))*(-self.y*self.X)).mean(1) + (self.regularization * w)
         else:
             return (torch.sigmoid (-self.y_test * ((self.X_train.T) @ w)) * 
             (-self.y_test * self.X_test)).mean(1) + (self.regularization * w)
+
+
+    def conjugate_residual(self, num_epochs):
+        w = torch.rand(self.X.shape[0])
+        loss_values = {}
+
+        start = time.time()
+        for epoch in range(num_epochs):
+            gradient = self.compute_gradient(w)
+            hessian_matrix = self.form_hessian(w)
+
+            update = krylov.conjugate_residual(hessian_matrix, gradient)
+            alpha = self.backtrack_line_search(w, update)
+
+            w = w - (alpha * update)
+            loss_values[epoch + 1] = self.l2_regularized_logistic_regression_loss(w).item()
+            #print(self.test_model(w))
+        end = time.time()
+
+        return w, loss_values, end-start
 
 
     def gmres(self, num_epochs):
@@ -173,7 +195,9 @@ class A9A_Analysis:
             return accuracy
 
     def plot_losses_all_newton_methods(self, filename, num_epochs):
-        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': self.gmres}
+        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
+        self.gmres, 'Conjugate Residual': self.conjugate_residual}
+
         for newton_method_name, newton_method in newton_methods.items():
             _, loss_vals, _ = newton_method(num_epochs)
             epochs = [i for i in range(1, num_epochs + 1)]
@@ -215,8 +239,8 @@ if __name__ == "__main__":
 
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     
-    a9a.plot_losses_all_newton_methods(None, 10)
+    a9a.plot_losses_all_newton_methods('loss_vals.png', 10)
 
-    # w, time = a9a.gmres(10)
+    #_ = a9a.conjugate_residual(10)
     # print(time)
     #print(a9a.test_model(w, False))
