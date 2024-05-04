@@ -108,6 +108,7 @@ class A9A_Analysis:
         w = torch.rand(self.X.shape[0])
         loss_values = {}
 
+        start = time.time()
         for epoch in tqdm(range(num_epochs)):
 
             # compute the gradient 
@@ -126,9 +127,9 @@ class A9A_Analysis:
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             loss_values[epoch + 1] = loss_val
 
-            print('acc', self.test_model(w), 'loss val', loss_val)
-        
-        return w, loss_values
+            #print('acc', self.test_model(w), 'loss val', loss_val)
+        end = time.time()
+        return w, loss_values, end-start
 
     def compute_gradient(self, w, is_train=True):
         if is_train:
@@ -142,6 +143,7 @@ class A9A_Analysis:
         w = torch.rand(self.X.shape[0]) 
         loss_values = {}
 
+        start = time.time()
         for epoch in tqdm(range(num_epochs)):
             gradient = self.compute_gradient(w)
             hessian_matrix = self.form_hessian(w)
@@ -152,11 +154,14 @@ class A9A_Analysis:
             update, _ = scipy.sparse.linalg.gmres(hessian_matrix, gradient, maxiter=10)
             update = torch.from_numpy(update)
 
-            alpha = 0.09 # do a line search here
+            #alpha = 0.09 # do a line search here
+            alpha = self.backtrack_line_search(w, update)
             w = w - (alpha * update)
-            print("loss", self.l2_regularized_logistic_regression_loss(w).item(), "acc", self.test_model(w))
-
-        return w
+            loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+            loss_values[epoch + 1] = loss_val
+            #print("loss", self.l2_regularized_logistic_regression_loss(w).item(), "acc", self.test_model(w))
+        end = time.time()
+        return w, loss_values, end-start
 
 
     def test_model(self, weight_vector, is_train=True):
@@ -167,6 +172,19 @@ class A9A_Analysis:
             accuracy = (np.sign((self.X_test.T)@weight_vector) == self.y_test).float().mean()
             return accuracy
 
+    def plot_losses_all_newton_methods(self, filename, num_epochs):
+        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': self.gmres}
+        for newton_method_name, newton_method in newton_methods.items():
+            _, loss_vals, _ = newton_method(num_epochs)
+            epochs = [i for i in range(1, num_epochs + 1)]
+            loss_values = [val for _, val in loss_vals.items()]
+            plt.plot(epochs, loss_values, label=newton_method_name)
+        plt.legend()
+        plt.xlabel('Number of Epochs')
+        plt.ylabel('Loss Values')
+        plt.title('Loss values vs Epochs')
+        plt.savefig(f'convex_model_plots/{filename}')
+        
 
     def plot_suboptimality(self, filename, newton_method):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
@@ -197,7 +215,8 @@ if __name__ == "__main__":
 
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     
-    _ = a9a.newton_method_exact(10)
+    a9a.plot_losses_all_newton_methods(None, 10)
 
-    #w = a9a.gmres(10)
+    # w, time = a9a.gmres(10)
+    # print(time)
     #print(a9a.test_model(w, False))
