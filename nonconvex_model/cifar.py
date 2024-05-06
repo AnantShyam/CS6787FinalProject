@@ -31,9 +31,10 @@ def create_train_test_dataloaders(batch_size):
     return train_data_loader, test_data_loader
 
 
-def l2_regularized_cross_entropy_loss(outputs, labels, model, reg_lambda=0.05):
+def l2_regularized_cross_entropy_loss(outputs, labels, model_params, reg_lambda=0.05):
+    labels = labels.long()
     cross_entropy_loss = F.cross_entropy(outputs, labels)
-    l2_reg = sum(torch.norm(param)**2 for param in model.parameters())
+    l2_reg = sum(torch.norm(param)**2 for param in model_params)
     return cross_entropy_loss + reg_lambda * l2_reg
 
 

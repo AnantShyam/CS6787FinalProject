@@ -9,6 +9,10 @@ import scipy
 import time 
 import os
 import krylov
+
+import jax
+import jax.numpy as jnp 
+from jax import grad
             
 class A9A_Analysis:
 
@@ -102,8 +106,6 @@ class A9A_Analysis:
             #     return alpha 
             
             alpha = rho * alpha 
-            #print(f_w_k, (f_w_k_alpha_update - c_alpha_gradient_update.item()), alpha)
-            #print(f_w_k_alpha_update, f_w_k + c_alpha_gradient_update, alpha)
 
     def newton_method_exact(self, num_epochs):
         w = torch.rand(self.X.shape[0])
@@ -201,6 +203,9 @@ class A9A_Analysis:
         end = time.time()
         return w, loss_values, accuracy_values, end-start
 
+     
+
+
 
     def test_model(self, weight_vector, is_train=True):
         if is_train:
@@ -233,7 +238,27 @@ class A9A_Analysis:
             plt.ylabel('Accuracy Values')
             plt.title('Accuracy Values vs Epochs')
         plt.savefig(f'convex_model_plots/{filename}')
+
+    
+    def measure_wall_clock_time_all_newton_methods(self, num_epochs):
+        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
+        self.gmres, 'Conjugate Residual': self.conjugate_residual}
+
+        f = open('model_statistics/wall_clock_times.txt', 'w')
+        f.write(f'{num_epochs} \n')
+        wall_clock_times = {}
+        for newton_method_name, newton_method in newton_methods.items():
+            _, _, _, wall_clock_time = newton_method(num_epochs)
+            wall_clock_times[newton_method_name] = wall_clock_time
+
         
+        # f = open('model_statistics/wall_clock_times.txt')
+        # f.write(f'{num_epochs} \n')
+        for newton_method_name, wall_clock_time in wall_clock_times.items():
+            f.write(f'{newton_method_name}, {str(wall_clock_time)} \n')
+            
+        return wall_clock_times
+
 
     def plot_suboptimality_all_newton_methods(self, filename, num_epochs):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
@@ -273,10 +298,15 @@ if __name__ == "__main__":
 
 
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
+    wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10)
+    print(wall_clock_times)
+
+    #print(torch.autograd.functional.hessian(a9a.l2_regularized_logistic_regression_loss, torch.ones(124)))
+    
     
     #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
     #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
-    a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10)
+    #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10)
 
     #_ = a9a.conjugate_residual(10)
     # print(time)
