@@ -31,11 +31,12 @@ def create_train_test_dataloaders(batch_size):
     return train_data_loader, test_data_loader
 
 
-def l2_regularized_cross_entropy_loss(outputs, labels, model_params, reg_lambda=0.05):
+def l2_regularized_cross_entropy_loss(outputs, labels, model, reg_lambda=0.05):
     labels = labels.long()
     cross_entropy_loss = F.cross_entropy(outputs, labels)
-    l2_reg = sum(torch.norm(param)**2 for param in model_params)
-    return cross_entropy_loss + reg_lambda * l2_reg
+    l2_reg = sum(torch.norm(param)**2 for param in model.parameters())
+    result = cross_entropy_loss + reg_lambda * l2_reg
+    return result
 
 
 def accuracy(outputs, labels):
@@ -71,7 +72,7 @@ def train_model_gradient_descent(model, train_data_loader, num_epochs=10):
             optimizer.step()
         
         mean_accuracy = torch.mean(torch.tensor(accuracies)).item()
-        print(mean_accuracy)
+        #print(mean_accuracy)
         mean_accuracies.append(mean_accuracy)
 
         loss_values.append(total_loss)
@@ -94,15 +95,15 @@ if __name__ == "__main__":
     num_epochs = 10
     trained_model, train_loss_values, train_mean_accuracies = train_model_gradient_descent(initial_model, train_data_loader, num_epochs)
     
-    torch.save(trained_model, 'model_weights/trained_model_weights.pt')
-    torch.save(torch.tensor(train_loss_values), 'model_statistics/train_loss_values.pt')
-    torch.save(torch.tensor(train_mean_accuracies), 'model_statistics/train_mean_accuracies.pt')
+    # torch.save(trained_model, 'model_weights/trained_model_weights.pt')
+    # torch.save(torch.tensor(train_loss_values), 'model_statistics/train_loss_values.pt')
+    # torch.save(torch.tensor(train_mean_accuracies), 'model_statistics/train_mean_accuracies.pt')
     
-    plot_values([i for i in range(1, num_epochs + 1)], train_loss_values, 'Epoch Number', 'Train Loss Values', 
-    'nonconvex_model_plots/train_loss.png')
+    # plot_values([i for i in range(1, num_epochs + 1)], train_loss_values, 'Epoch Number', 'Train Loss Values', 
+    # 'nonconvex_model_plots/train_loss.png')
 
-    plot_values([i for i in range(1, num_epochs + 1)], train_mean_accuracies, 'Epoch Number', 'Train Mean Accuracy', 
-    'nonconvex_model_plots/train_mean_accuracy.png')
+    # plot_values([i for i in range(1, num_epochs + 1)], train_mean_accuracies, 'Epoch Number', 'Train Mean Accuracy', 
+    # 'nonconvex_model_plots/train_mean_accuracy.png')
 
     # torch.save(trained_model, 'model_weights/trained_model_weights.pt')
     # torch.save(torch.tensor(train_loss_values), 'model_statistics/train_loss_values.pt')

@@ -26,20 +26,36 @@ def train_newton_method(model, train_data_loader, num_epochs):
 
         for inputs, labels in train_data_loader:
             outputs = model(inputs)
-            print(model.parameters())
+            #print(outputs)
+            #print(model.parameters())
+            weight_vector = torch.nn.utils.parameters_to_vector(model.parameters())
+            # hessian_matrix = torch.autograd.functional.hessian(
 
-            loss_fn = lambda w: cifar.l2_regularized_cross_entropy_loss(outputs, labels, w)
+
+
+
+            # )
+
+
+            #loss_fn = lambda w: cifar.l2_regularized_cross_entropy_loss(outputs, labels, w)
+            
+            print(weight_vector.shape)
+            hessian_matrix = torch.func.hessian(
+                cifar.l2_regularized_cross_entropy_loss
+            )(outputs, labels.float(), model)
+
+            print(hessian_matrix.shape)
             # hessian_matrix = torch.autograd.functional.hessian(
             #     cifar.l2_regularized_cross_entropy_loss, 
             #     (
             #         outputs, 
             #         labels.float(), 
-            #         torch.nn.utils.parameters_to_vector(model.parameters())
+            #         model
             #     )
             # )
-            hessian_matrix = torch.autograd.functional.hessian(loss_fn, torch.nn.utils.parameters_to_vector(model.parameters()))
-            print(hessian_matrix)
-            quit()
+            #hessian_matrix = torch.autograd.functional.hessian(loss_fn, torch.nn.utils.parameters_to_vector(model.parameters()))
+            #print(hessian_matrix)
+            #quit()
     return 
 
 
