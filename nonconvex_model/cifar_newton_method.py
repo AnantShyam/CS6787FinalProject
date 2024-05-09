@@ -6,6 +6,7 @@ from torch.nn import functional as F
 import torch.nn as nn
 import torch.optim as optim
 import pyhessian
+import copy
 
 # w vector = w .parameters
 # torch.nn.utils.parameters_to_vector()
@@ -73,12 +74,21 @@ def newton_method(model, data_loader, num_epochs):
 
         new_first_weight_vector = first_layer_weight_vector - (alpha * (hessian_matrix_first_matrix_inverse @ first_layer_gradient))
         new_first_layer_weight_vector = new_first_weight_vector.reshape(32, 3, 3, 3)
+        #print(model.state_dict()['conv1.weight'])
 
-        for name, param in model.state_dict().items():
-            if name == 'conv1.weight':
-                transformed_param = new_first_layer_weight_vector
-                param.copy_(transformed_param)
-
+        x = model.state_dict()['conv1.weight']
+        # for name, param in model.state_dict().items():
+        #     if name == 'conv1.weight':
+        #         transformed_param = new_first_layer_weight_vector
+        #         print(transformed_param - param)
+        #         param.copy_(transformed_param)
+        # model.load_state_dict(model.state_dict())
+        state_dict = copy.deepcopy(model.state_dict())
+        state_dict['conv1.weight'] = new_first_layer_weight_vector
+        model.load_state_dict(state_dict)
+        y = model.state_dict()['conv1.weight']
+        print(y - x)
+        #print(model.state_dict()['conv1.weight'])
         print('done')
     
 
