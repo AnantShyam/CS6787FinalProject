@@ -3,7 +3,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.nn import functional as F
-from cifar10_loader import CIFAR10Dataset  
+from cifar10_loader import CIFAR10Dataset  # Custom CIFAR-10 data loader
 import torch.nn as nn
 import torch.optim as optim
 
@@ -16,7 +16,7 @@ class CIFAR10Net(nn.Module):
         self.bn2 = nn.BatchNorm2d(64)
         self.pool = nn.MaxPool2d(2, 2)
         self.dropout1 = nn.Dropout(0.25)
-        self.fc1 = nn.Linear(64 * 8 * 8, 512)  # 8x8 output size after pooling
+        self.fc1 = nn.Linear(64 * 8 * 8, 512)  # Adjusted for 8x8 output size after pooling
         self.dropout2 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(512, 10)
         self.initialize_weights()
@@ -24,7 +24,7 @@ class CIFAR10Net(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.bn1(self.conv1(x))))
         x = self.pool(F.relu(self.bn2(self.conv2(x))))
-        x = x.view(-1, 64 * 8 * 8)
+        x = x.view(-1, 64 * 8 * 8)  # Ensure this matches the expected input size of self.fc1
         x = F.relu(self.fc1(x))
         x = self.dropout1(x)
         x = self.fc2(x)
@@ -37,6 +37,43 @@ class CIFAR10Net(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.xavier_normal_(m.weight)
                 nn.init.constant_(m.bias, 0)
+
+def biconjugate_gradient_stable(A, b):
+    num_iter = 6 
+    
+    x = [None] * num_iter 
+    r = [None] * num_iter
+    r_hat = [None] * num_iter
+    rho = [None] * num_iter
+    p = [None] * num_iter
+
+    # initialize parameters
+    x[0] = torch.rand(b.shape[0])
+    r[0] = b - (A @ x[0])
+    r_hat[0] = torch.clone(r[0])
+
+    rho[0] = (r_hat[0].T @ r[0])
+    p[0] = r[0]
+
+    for i in range(1, num_iter):
+        v = A @ p[i - 1]
+        alpha = rho[i - 1]/(r_hat[0].T @ v)
+        h = x[i - 1] + (alpha * p[i - 1])
+        s = r[i - 1] - (alpha * v)
+
+        if (torch.norm(b - (A @ x[i - 1]))) <= 10**-3:
+            return x[i - 1]
+
+        t = A @ s 
+        omega = (t.T @ s)/(t.T @ t)
+        x[i] = h + (omega * s)
+        r[i] = s - (omega * t)
+        rho[i] = (r_hat[0].T @ r[i])
+
+        beta = (rho[i]/rho[i - 1]) * (alpha/omega)
+        p[i] = r[i] + (beta * (p[i - 1] - (omega * v)))
+    
+    return x[-1]
 
 def l2_regularized_cross_entropy_loss(outputs, labels, model, reg_lambda=0.01):
     cross_entropy_loss = F.cross_entropy(outputs, labels)
