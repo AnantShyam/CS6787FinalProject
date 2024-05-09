@@ -54,42 +54,52 @@ def newton_method(model, data_loader, num_epochs):
         params, grads = pyhessian.utils.get_params_grad(model)
 
         # update the first layer's parameters for right now
-        first_layer_weight_vector = list(model.parameters())[0]
-        first_layer_weight_vector = first_layer_weight_vector.flatten()
-        first_layer_weight_vector = first_layer_weight_vector.reshape(864, 1)
+        for i in range(len(list(model.parameters()))):
+            if i == 0:
+                weight_vector = list(model.parameters())[i]
+                original_shape = weight_vector.shape
+                weight_vector = weight_vector.flatten()
+                weight_vector = weight_vector.reshape(len(weight_vector), 1)
 
-        first_layer_gradient = grads[0]
-        eigenvalues, eigenvectors = hessian_class.eigenvalues(maxIter=1)
-        eigenvectors = eigenvectors[0]
+                gradient = grads[i]
+                eigenvalues, eigenvectors = hessian_class.eigenvalues(maxIter=1, top_n=1)
+                eigenvectors = eigenvectors[0]
 
-        eigenvalue = eigenvalues[0]
-        eigenvector = eigenvectors[0].flatten()
-        eigenvector = eigenvector.reshape(864, 1)
-        hessian_matrix_first_matrix = (eigenvalue) * (eigenvector @ eigenvector.T)
-        hessian_matrix_first_matrix_inverse = torch.inverse(hessian_matrix_first_matrix)
+                eigenvalue = eigenvalues[0]
+                eigenvector = eigenvectors[i].flatten()
+                eigenvector = eigenvector.reshape(len(eigenvector), 1)
+                
+                gradient = gradient.flatten()
+                gradient = gradient.reshape(len(gradient), 1)
 
-        alpha = 0.01
-        
-        first_layer_gradient = first_layer_gradient.flatten().reshape(864, 1)
+                # approximate hessian
 
-        new_first_weight_vector = first_layer_weight_vector - (alpha * (hessian_matrix_first_matrix_inverse @ first_layer_gradient))
-        new_first_layer_weight_vector = new_first_weight_vector.reshape(32, 3, 3, 3)
-        #print(model.state_dict()['conv1.weight'])
+                hessian_matrix_first_matrix = (eigenvalue) * (eigenvector @ eigenvector.T)
+                
+                tau = 10**-5
+                hessian_matrix_first_matrix = hessian_matrix_first_matrix + (tau*torch.eye(len(hessian_matrix_first_matrix)))
+                #print(hessian_matrix_first_matrix.shape)
+                hessian_matrix_first_matrix_inverse = torch.inverse(hessian_matrix_first_matrix)
 
-        x = model.state_dict()['conv1.weight']
-        # for name, param in model.state_dict().items():
-        #     if name == 'conv1.weight':
-        #         transformed_param = new_first_layer_weight_vector
-        #         print(transformed_param - param)
-        #         param.copy_(transformed_param)
-        # model.load_state_dict(model.state_dict())
-        state_dict = copy.deepcopy(model.state_dict())
-        state_dict['conv1.weight'] = new_first_layer_weight_vector
-        model.load_state_dict(state_dict)
-        y = model.state_dict()['conv1.weight']
-        print(y - x)
-        #print(model.state_dict()['conv1.weight'])
-        print('done')
+                alpha = 0.01
+                
+                # gradient = gradient.flatten()
+                # gradient = gradient.reshape(len(gradient), 1)
+
+                new_first_weight_vector = weight_vector - (alpha * (hessian_matrix_first_matrix_inverse @ gradient))
+                new_first_layer_weight_vector = new_first_weight_vector.reshape(original_shape)
+                #print(model.state_dict()['conv1.weight'])
+
+                #x = copy.deepcopy(model.state_dict()['conv1.weight'])
+                model.state_dict()['conv1.weight'].data += new_first_layer_weight_vector
+
+                #y = copy.deepcopy(model.state_dict()['conv1.weight'])
+                # print(model.state_dict()['conv1.weight'].data[0,0])
+                # print(x.data[0,0])
+                #print(y.data[0,0] - x.data[0,0])
+                print('done')
+    
+    return model
     
 
 
@@ -97,4 +107,4 @@ if __name__ == "__main__":
     train_data_loader, test_data_loader = cifar.create_train_test_dataloaders(32)
     initial_model = cifar_model.CIFAR10Net()
     #train_newton_method(initial_model, train_data_loader, 1)
-    newton_method(initial_model, train_data_loader, 1)
+    trained_model = newton_method(initial_model, train_data_loader, 1)
