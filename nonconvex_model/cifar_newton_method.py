@@ -5,6 +5,7 @@ from cifar10_loader import CIFAR10Dataset
 from torch.nn import functional as F
 import torch.nn as nn
 import torch.optim as optim
+import pyhessian
 
 # w vector = w .parameters
 # torch.nn.utils.parameters_to_vector()
@@ -19,48 +20,71 @@ import torch.optim as optim
 
 # if no positive eigenvalues, take a gradient step and try again
 
+def diagonal_hessian_approximation(model, loss_fn):
+    model_parameters = list(model.parameters())
+
+
+
+    pass 
+
+
+
+
 def train_newton_method(model, train_data_loader, num_epochs):
     #print(torch.nn.utils.parameters_to_vector(model.parameters()))
     for epoch in range(num_epochs):
         epoch_loss = 0.0
-
         for inputs, labels in train_data_loader:
             outputs = model(inputs)
             #print(outputs)
-            #print(model.parameters())
-            weight_vector = torch.nn.utils.parameters_to_vector(model.parameters())
-            # hessian_matrix = torch.autograd.functional.hessian(
+            model_params = list(model.parameters())
+            hessian_class = pyhessian.hessian(model, F.cross_entropy, dataloader=train_data_loader, cuda=False)
 
+            print(hessian_class.eigenvalues(maxIter=1))
 
-
-
-            # )
-
-
-            #loss_fn = lambda w: cifar.l2_regularized_cross_entropy_loss(outputs, labels, w)
-            
-            print(weight_vector.shape)
-            hessian_matrix = torch.func.hessian(
-                cifar.l2_regularized_cross_entropy_loss
-            )(outputs, labels.float(), model)
-
-            print(hessian_matrix.shape)
-            # hessian_matrix = torch.autograd.functional.hessian(
-            #     cifar.l2_regularized_cross_entropy_loss, 
-            #     (
-            #         outputs, 
-            #         labels.float(), 
-            #         model
-            #     )
-            # )
-            #hessian_matrix = torch.autograd.functional.hessian(loss_fn, torch.nn.utils.parameters_to_vector(model.parameters()))
-            #print(hessian_matrix)
-            #quit()
+            quit()
     return 
 
+
+def newton_method(model, data_loader, num_epochs):
+    
+    for inputs, labels in data_loader:
+        hessian_class = pyhessian.hessian(model, F.cross_entropy, data=(inputs, labels), cuda=False)
+        params, grads = pyhessian.utils.get_params_grad(model)
+
+        # update the first layer's parameters for right now
+        first_layer_weight_vector = list(model.parameters())[0]
+        first_layer_weight_vector = first_layer_weight_vector.flatten()
+        first_layer_weight_vector = first_layer_weight_vector.reshape(864, 1)
+
+        first_layer_gradient = grads[0]
+        eigenvalues, eigenvectors = hessian_class.eigenvalues(maxIter=1)
+        eigenvectors = eigenvectors[0]
+
+        eigenvalue = eigenvalues[0]
+        eigenvector = eigenvectors[0].flatten()
+        eigenvector = eigenvector.reshape(864, 1)
+        hessian_matrix_first_matrix = (eigenvalue) * (eigenvector @ eigenvector.T)
+        hessian_matrix_first_matrix_inverse = torch.inverse(hessian_matrix_first_matrix)
+
+        alpha = 0.01
+        
+        first_layer_gradient = first_layer_gradient.flatten().reshape(864, 1)
+
+        new_first_weight_vector = first_layer_weight_vector - (alpha * (hessian_matrix_first_matrix_inverse @ first_layer_gradient))
+        new_first_layer_weight_vector = new_first_weight_vector.reshape(32, 3, 3, 3)
+
+        for name, param in model.state_dict().items():
+            if name == 'conv1.weight':
+                transformed_param = new_first_layer_weight_vector
+                param.copy_(transformed_param)
+
+        print('done')
+    
 
 
 if __name__ == "__main__":
     train_data_loader, test_data_loader = cifar.create_train_test_dataloaders(32)
     initial_model = cifar_model.CIFAR10Net()
-    train_newton_method(initial_model, train_data_loader, 1)
+    #train_newton_method(initial_model, train_data_loader, 1)
+    newton_method(initial_model, train_data_loader, 1)

@@ -11,12 +11,12 @@ class CIFAR10Net(nn.Module):
         super(CIFAR10Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, 3, padding=1, bias=False)
         self.conv2 = nn.Conv2d(32, 64, 3, padding=1, bias=False)
-        self.pool = nn.MaxPool2d(2, 2, bias=False)
-        self.dropout1 = nn.Dropout(0.25, bias=False)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.dropout1 = nn.Dropout(0.25)
         self.fc1 = nn.Linear(64 * 16 * 16, 512, bias=False)
-        self.dropout2 = nn.Dropout(0.5, bias=False)
+        self.dropout2 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(512, 10, bias=False)
-        self.initialize_weights()
+        #self.initialize_weights()
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
