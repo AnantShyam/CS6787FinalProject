@@ -37,6 +37,18 @@ def conjugate_gradient_hessian_vp(self, gradient, w):
 
     return x_i
 
+def hessian_vector_product(self, w, u):
+    # takes computes product of Hessian * v
+
+    # convert tensors to Jax arrays
+    #w = jnp.asarray(w.numpy())
+    #u = jnp.asarray(u.numpy())
+    print(type(w))
+    loss_fn_returning_jax_tensor = lambda w: jnp.asarray(self.l2_regularized_logistic_regression_loss(w).numpy())
+    w = jnp.asarray(w.numpy())
+    result = grad(lambda w: jnp.vdot(grad(loss_fn_returning_jax_tensor)(w), u))(w)
+    return torch.from_numpy(np.array(result))
+
 
 def conjugate_gradient_hessian_vp(A, gradient):
     """
