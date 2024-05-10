@@ -1,0 +1,2 @@
+init_accuracy = 0.08716000000000002
+after newton method on third layer = 0.17190000000000005

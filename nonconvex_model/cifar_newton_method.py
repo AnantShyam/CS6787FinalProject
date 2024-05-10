@@ -74,8 +74,8 @@ def newton_method(model, data_loader, num_epochs):
                 gradient = gradient.reshape(len(gradient), 1)
 
                 # approximate hessian
-                print(eigenvector.shape)
-                print(eigenvector.T.shape)
+                #print(eigenvector.shape)
+                #print(eigenvector.T.shape)
                 hessian_matrix_first_matrix = (eigenvalue) * (eigenvector @ eigenvector.T)
                 
                 tau = 10**-5
@@ -108,5 +108,8 @@ def newton_method(model, data_loader, num_epochs):
 if __name__ == "__main__":
     train_data_loader, test_data_loader = cifar.create_train_test_dataloaders(2000)
     initial_model = cifar_model.CIFAR10Net()
+    print(cifar.test_model(initial_model, train_data_loader))
     #train_newton_method(initial_model, train_data_loader, 1)
     trained_model = newton_method(initial_model, train_data_loader, 1)
+    # print('Accuracy: ')
+    print(cifar.test_model(trained_model, train_data_loader))

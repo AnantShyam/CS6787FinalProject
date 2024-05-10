@@ -78,7 +78,29 @@ def train_model(model, train_data_loader, num_epochs=10):
         loss_values.append(total_loss)
 
     return model, loss_values, mean_accuracies
-            
+
+
+def test_model(model, data_loader):
+    model.eval()
+
+    total_wrong = 0
+    total_examples = 0
+
+    for inputs, labels in data_loader:
+
+        num_wrong = 0
+        predictions = model(inputs)
+        predictions = torch.argmax(predictions, dim=1)
+        
+        for i in range(len(labels)):
+            if labels[i] != predictions[i]:
+                num_wrong += 1
+        
+        total_wrong += num_wrong
+        total_examples += len(labels)
+    
+    accuracy = 1 - (float(total_wrong)/float(total_examples))
+    return accuracy
     
 def plot_values(x_vals, y_vals, x_axis_title, y_axis_title, file_path_name):
     plt.plot(x_vals, y_vals)
