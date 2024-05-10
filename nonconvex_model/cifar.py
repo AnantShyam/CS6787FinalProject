@@ -46,7 +46,7 @@ def accuracy(outputs, labels):
     return correct / total
 
 
-def train_model_gradient_descent(model, train_data_loader, num_epochs=10):
+def train_model(model, train_data_loader, num_epochs=10):
     
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     start_time = time.time()
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     initial_model = cifar_model.CIFAR10Net()
     torch.save(initial_model, 'model_weights/initial_model_weights.pt')
     num_epochs = 10
-    trained_model, train_loss_values, train_mean_accuracies = train_model_gradient_descent(initial_model, train_data_loader, num_epochs)
+    trained_model, train_loss_values, train_mean_accuracies = train_model(initial_model, train_data_loader, num_epochs)
     
     # torch.save(trained_model, 'model_weights/trained_model_weights.pt')
     # torch.save(torch.tensor(train_loss_values), 'model_statistics/train_loss_values.pt')

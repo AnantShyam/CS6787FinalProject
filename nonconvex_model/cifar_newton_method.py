@@ -54,8 +54,9 @@ def newton_method(model, data_loader, num_epochs):
         params, grads = pyhessian.utils.get_params_grad(model)
 
         # update the first layer's parameters for right now
+        names = [name for name, _ in model.state_dict().items()]
         for i in range(len(list(model.parameters()))):
-            if i == 0:
+            if i == 3:
                 weight_vector = list(model.parameters())[i]
                 original_shape = weight_vector.shape
                 weight_vector = weight_vector.flatten()
@@ -73,7 +74,8 @@ def newton_method(model, data_loader, num_epochs):
                 gradient = gradient.reshape(len(gradient), 1)
 
                 # approximate hessian
-
+                print(eigenvector.shape)
+                print(eigenvector.T.shape)
                 hessian_matrix_first_matrix = (eigenvalue) * (eigenvector @ eigenvector.T)
                 
                 tau = 10**-5
@@ -91,20 +93,20 @@ def newton_method(model, data_loader, num_epochs):
                 #print(model.state_dict()['conv1.weight'])
 
                 #x = copy.deepcopy(model.state_dict()['conv1.weight'])
-                model.state_dict()['conv1.weight'].data += new_first_layer_weight_vector
+                model.state_dict()[names[i]].data += new_first_layer_weight_vector
 
                 #y = copy.deepcopy(model.state_dict()['conv1.weight'])
                 # print(model.state_dict()['conv1.weight'].data[0,0])
                 # print(x.data[0,0])
                 #print(y.data[0,0] - x.data[0,0])
                 print('done')
-    
+
     return model
     
 
 
 if __name__ == "__main__":
-    train_data_loader, test_data_loader = cifar.create_train_test_dataloaders(32)
+    train_data_loader, test_data_loader = cifar.create_train_test_dataloaders(2000)
     initial_model = cifar_model.CIFAR10Net()
     #train_newton_method(initial_model, train_data_loader, 1)
     trained_model = newton_method(initial_model, train_data_loader, 1)
