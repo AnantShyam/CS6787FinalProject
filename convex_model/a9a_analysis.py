@@ -304,9 +304,12 @@ class A9A_Analysis:
         gradient_descent_loss = torch.load('model_statistics/gradient_descent_loss.pt')
         final_converged_loss = gradient_descent_loss[-1]
 
-        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
-        self.gmres, 'Conjugate Residual': self.conjugate_residual}
+        # newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
+        # self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
+        #newton_methods = {'Exact Newton': self.newton_method_exact}
+        #newton_methods = {'GMRES': self.gmres}
+        newton_methods = {'Conjugate Residual': self.conjugate_residual}
 
         for newton_method_name, newton_method in newton_methods.items():
             _, loss_vals, _, _ = newton_method(num_epochs)
@@ -316,7 +319,7 @@ class A9A_Analysis:
             
             plt.legend()
             plt.xlabel('Number of Epochs')
-            plt.ylabel('Suboptimality')
+            plt.ylabel('Suboptimality (Log Scale)')
             plt.savefig(f'convex_model_plots/{newton_method_name}_{filename}')
         
         #_, newton_method_loss_vals = newton_method(15)
@@ -341,9 +344,9 @@ if __name__ == "__main__":
     # init_w = torch.rand(a9a.X.shape[0])
     
     #w, _, _, _ = a9a.newton_method_exact(10, init_w)
-    _, gradient_descent_loss_values = a9a.gradient_descent()
+    #_, gradient_descent_loss_values = a9a.gradient_descent()
     # print(gradient_descent_loss_values[-1])#
-    torch.save(torch.tensor(gradient_descent_loss_values), 'model_statistics/gradient_descent_loss.pt')
+    #torch.save(torch.tensor(gradient_descent_loss_values), 'model_statistics/gradient_descent_loss.pt')
 
     # w = torch.randn(124)
     # v = torch.randn(124)
@@ -356,8 +359,8 @@ if __name__ == "__main__":
     
     
     #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
-    a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
-    #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
+    #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
+    a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10)
 
     #_ = a9a.conjugate_residual(10)
     # print(time)
