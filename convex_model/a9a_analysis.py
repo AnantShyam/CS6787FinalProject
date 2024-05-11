@@ -244,12 +244,12 @@ class A9A_Analysis:
             return accuracy
     
 
-    def plot_losses_or_accuracies_all_newton_methods(self, filename, num_epochs, plot_losses=True):
+    def plot_losses_or_accuracies_all_newton_methods(self, filename, num_epochs, init_w, plot_losses=True):
         newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
         for newton_method_name, newton_method in newton_methods.items():
-            _, loss_vals, accuracy_vals, _ = newton_method(num_epochs)
+            _, loss_vals, accuracy_vals, _ = newton_method(num_epochs, init_w)
             epochs = [i for i in range(1, num_epochs + 1)]
             loss_values = [val for _, val in loss_vals.items()] 
             accuracy_values = [val for _, val in accuracy_vals.items()]
@@ -335,13 +335,13 @@ if __name__ == "__main__":
     # v = torch.randn(124)
 
     # print(a9a.hessian_vector_product(w, v))
-    wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10, init_w)
+    #wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10, init_w)
     #print(wall_clock_times)
 
     #print(torch.autograd.functional.hessian(a9a.l2_regularized_logistic_regression_loss, torch.ones(124)))
     
     
-    #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
+    a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, init_w, True)
     #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
     #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
 
