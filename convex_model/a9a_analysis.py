@@ -307,6 +307,7 @@ class A9A_Analysis:
         newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
+
         for newton_method_name, newton_method in newton_methods.items():
             _, loss_vals, _, _ = newton_method(num_epochs)
             epochs = [i for i in range(1, num_epochs + 1)]
@@ -340,9 +341,9 @@ if __name__ == "__main__":
     # init_w = torch.rand(a9a.X.shape[0])
     
     #w, _, _, _ = a9a.newton_method_exact(10, init_w)
-    # _, gradient_descent_loss_values = a9a.gradient_descent()
+    _, gradient_descent_loss_values = a9a.gradient_descent()
     # print(gradient_descent_loss_values[-1])#
-    # torch.save(torch.tensor(gradient_descent_loss_values), 'model_statistics/gradient_descent_loss.pt')
+    torch.save(torch.tensor(gradient_descent_loss_values), 'model_statistics/gradient_descent_loss.pt')
 
     # w = torch.randn(124)
     # v = torch.randn(124)
