@@ -6,6 +6,8 @@ from torch.nn import functional as F
 import torch.nn as nn
 import torch.optim as optim
 import pyhessian
+import matplotlib.pyplot as plt
+from tqdm import tqdm
 import copy
 
 # w vector = w .parameters
@@ -21,44 +23,26 @@ import copy
 
 # if no positive eigenvalues, take a gradient step and try again
 
-def diagonal_hessian_approximation(model, loss_fn):
-    model_parameters = list(model.parameters())
+def newton_method(model, data_loader, num_epochs, layers_to_be_updated):
 
-
-
-    pass 
-
-
-
-
-def train_newton_method(model, train_data_loader, num_epochs):
-    #print(torch.nn.utils.parameters_to_vector(model.parameters()))
-    for epoch in range(num_epochs):
-        epoch_loss = 0.0
-        for inputs, labels in train_data_loader:
-            outputs = model(inputs)
-            #print(outputs)
-            model_params = list(model.parameters())
-            hessian_class = pyhessian.hessian(model, F.cross_entropy, dataloader=train_data_loader, cuda=False)
-
-            print(hessian_class.eigenvalues(maxIter=1))
-
-            quit()
-    return 
-
-
-def newton_method(model, data_loader, num_epochs):
+    # layers_to_be_updated = indices of layers to run newton's method on
     
-    for epoch in range(num_epochs):
-            
+    train_accuracies = []
+
+    for epoch in tqdm(range(num_epochs)):
+
+        # test model at the start of each epoch
+        train_accuracy = cifar.test_model(model, data_loader)
+        print(train_accuracy)
+        train_accuracies.append(train_accuracy)
+
         for inputs, labels in data_loader:
             hessian_class = pyhessian.hessian(model, F.cross_entropy, data=(inputs, labels), cuda=False)
             params, grads = pyhessian.utils.get_params_grad(model)
 
-            # update the first layer's parameters for right now
             names = [name for name, _ in model.state_dict().items()]
             for i in range(len(list(model.parameters()))):
-                if i == 1:
+                if i in layers_to_be_updated:
                     weight_vector = list(model.parameters())[i]
                     original_shape = weight_vector.shape
                     weight_vector = weight_vector.flatten()
@@ -76,44 +60,45 @@ def newton_method(model, data_loader, num_epochs):
                     gradient = gradient.reshape(len(gradient), 1)
 
                     # approximate hessian
-                    #print(eigenvector.shape)
-                    #print(eigenvector.T.shape)
                     hessian_matrix_first_matrix = (eigenvalue) * (eigenvector @ eigenvector.T)
                     
-                    tau = 10**-5
+                    tau = 10**-5 
+
+                    # try and make hessian positive definite
                     hessian_matrix_first_matrix = hessian_matrix_first_matrix + (tau*torch.eye(len(hessian_matrix_first_matrix)))
-                    #print(hessian_matrix_first_matrix.shape)
                     hessian_matrix_first_matrix_inverse = torch.inverse(hessian_matrix_first_matrix)
 
                     alpha = 0.01
-                    
-                    # gradient = gradient.flatten()
-                    # gradient = gradient.reshape(len(gradient), 1)
 
                     new_first_weight_vector = weight_vector - (alpha * (hessian_matrix_first_matrix_inverse @ gradient))
                     new_first_layer_weight_vector = new_first_weight_vector.reshape(original_shape)
-                    #print(model.state_dict()['conv1.weight'])
 
-                    #x = copy.deepcopy(model.state_dict()['conv1.weight'])
                     model.state_dict()[names[i]].data += new_first_layer_weight_vector
 
-                    #y = copy.deepcopy(model.state_dict()['conv1.weight'])
-                    # print(model.state_dict()['conv1.weight'].data[0,0])
-                    # print(x.data[0,0])
-                    #print(y.data[0,0] - x.data[0,0])
                     print('done')
 
-    return model
+    return model, train_accuracies
     
 
 
 if __name__ == "__main__":
     train_data_loader, test_data_loader = cifar.create_train_test_dataloaders(2000)
     initial_model = cifar_model.CIFAR10Net()
-    print(cifar.test_model(initial_model, train_data_loader))
+    #print(cifar.test_model(initial_model, train_data_loader))
     #train_newton_method(initial_model, train_data_loader, 1)
-    trained_model = newton_method(initial_model, train_data_loader, 2)
-    print(cifar.test_model(trained_model, train_data_loader))
-    torch.save(trained_model, 'model_weights/trained_model_newton_method_second_layer.pt')
+
+
+    # run newton's method on just first layer for 5 epochs and plot accuracies
+
+    num_epochs = 4
+    trained_model, train_accuracies = newton_method(initial_model, train_data_loader, num_epochs, [3])
+    
+    plt.plot([i for i in range(1, num_epochs + 1)], train_accuracies)
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.savefig('nonconvex_model_plots/newton_method_accuracies_only_fourth_layer.png')
+
+    #print(cifar.test_model(trained_model, train_data_loader))
+    torch.save(trained_model, 'model_weights/trained_model_newton_method_fourth_layer.pt')
     # print('Accuracy: ')
     
