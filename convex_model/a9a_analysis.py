@@ -25,6 +25,8 @@ class A9A_Analysis:
         self.X_test = X_test 
         self.y_test = y_test
         self.regularization = 0.01
+        self.w_init = torch.load('model_weights/initial_weight_vector.pt')
+
 
     def l2_regularized_logistic_regression_loss(self,w):
         #print(type(w))
@@ -101,7 +103,7 @@ class A9A_Analysis:
         init_alpha = 1.0
         rho = 0.5
         c = 0.001
-        min_alpha = (10**-4)
+        min_alpha = 0.05
 
         alpha = init_alpha
         while True:
@@ -120,9 +122,9 @@ class A9A_Analysis:
             
             alpha = rho * alpha 
 
-    def newton_method_exact(self, num_epochs, init_w):
+    def newton_method_exact(self, num_epochs):
         #w = torch.rand(self.X.shape[0])
-        w = init_w
+        w = torch.clone(self.w_init)
         loss_values = {}
         accuracy_values = {}
 
@@ -146,6 +148,7 @@ class A9A_Analysis:
             w = w - (alpha * (update))
 
             #loss_val = self.l2_regularized_logistic_regression_loss(w).item()
+            print(loss_val)
             loss_values[epoch + 1] = loss_val
             
 
@@ -162,9 +165,9 @@ class A9A_Analysis:
             (-self.y_test * self.X_test)).mean(1) + (self.regularization * w)
 
 
-    def conjugate_residual(self, num_epochs, init_w):
+    def conjugate_residual(self, num_epochs):
         #w = torch.rand(self.X.shape[0])
-        w = init_w
+        w = torch.clone(self.w_init)
         loss_values = {}
         accuracy_values = {}
 
@@ -200,9 +203,9 @@ class A9A_Analysis:
         return result
 
 
-    def gmres(self, num_epochs, init_w):
+    def gmres(self, num_epochs):
         #w = torch.rand(self.X.shape[0]) 
-        w = init_w
+        w = torch.clone(self.w_init)
         loss_values = {}
         accuracy_values = {}
 
@@ -249,7 +252,7 @@ class A9A_Analysis:
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
         for newton_method_name, newton_method in newton_methods.items():
-            _, loss_vals, accuracy_vals, _ = newton_method(num_epochs, init_w)
+            _, loss_vals, accuracy_vals, _ = newton_method(num_epochs)
             epochs = [i for i in range(1, num_epochs + 1)]
             loss_values = [val for _, val in loss_vals.items()] 
             accuracy_values = [val for _, val in accuracy_vals.items()]
@@ -257,18 +260,20 @@ class A9A_Analysis:
                 plt.plot(epochs, loss_values, label=newton_method_name)
             else:
                 plt.plot(epochs, accuracy_values, label=newton_method_name)
-        plt.legend()
-        plt.xlabel('Number of Epochs')
-        if plot_losses:
-            plt.ylabel('Loss Values')
-            plt.title('Loss values vs Epochs')
-        else:
-            plt.ylabel('Accuracy Values')
-            plt.title('Accuracy Values vs Epochs')
-        plt.savefig(f'convex_model_plots/{filename}')
+            
+
+            plt.legend()
+            plt.xlabel('Number of Epochs')
+            if plot_losses:
+                plt.ylabel('Loss Values')
+                plt.title('Loss values vs Epochs')
+            else:
+                plt.ylabel('Accuracy Values')
+                plt.title('Accuracy Values vs Epochs')
+            plt.savefig(f'convex_model_plots/{newton_method_name}_{filename}')
 
     
-    def measure_wall_clock_time_all_newton_methods(self, num_epochs, init_w):
+    def measure_wall_clock_time_all_newton_methods(self, num_epochs):
         newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
@@ -278,7 +283,7 @@ class A9A_Analysis:
         f.write(f'{num_epochs} \n')
         wall_clock_times = {}
         for newton_method_name, newton_method in newton_methods.items():
-            _, _, _, wall_clock_time = newton_method(num_epochs, init_w)
+            _, _, _, wall_clock_time = newton_method(num_epochs)
             wall_clock_times[newton_method_name] = wall_clock_time
 
         for newton_method_name, wall_clock_time in wall_clock_times.items():
@@ -287,7 +292,7 @@ class A9A_Analysis:
         return wall_clock_times
 
 
-    def plot_suboptimality_all_newton_methods(self, filename, num_epochs, init_w):
+    def plot_suboptimality_all_newton_methods(self, filename, num_epochs):
         # difference between Gradient Descent approximately converged loss and Newton's Method Loss over iterations 
         gradient_descent_loss = torch.load('model_statistics/gradient_descent_loss.pt')
         final_converged_loss = gradient_descent_loss[-1]
@@ -296,7 +301,7 @@ class A9A_Analysis:
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
         for newton_method_name, newton_method in newton_methods.items():
-            _, loss_vals, _, _ = newton_method(num_epochs, init_w)
+            _, loss_vals, _, _ = newton_method(num_epochs)
             epochs = [i for i in range(1, num_epochs + 1)]
             loss_differences = [abs(final_converged_loss - loss_val) for _, loss_val in loss_vals.items()]
             plt.plot(np.array(epochs), np.log(np.array(loss_differences)), label=newton_method_name)
@@ -322,26 +327,27 @@ if __name__ == "__main__":
     a9a_dataset_train, labels_train = helpers.read_a9a_dataset('../data/a9a_train.txt')
     a9a_dataset_test, labels_test = helpers.read_a9a_dataset('../data/a9a_test.txt')
 
-
+    init_w = torch.rand(a9a_dataset_train.shape[0])
+    torch.save(init_w, 'model_weights/initial_weight_vector.pt')
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
-    init_w = torch.rand(a9a.X.shape[0])
+    # init_w = torch.rand(a9a.X.shape[0])
     
-
+    #w, _, _, _ = a9a.newton_method_exact(10, init_w)
     # _, gradient_descent_loss_values = a9a.gradient_descent()
-    # print(gradient_descent_loss_values[-1])
+    # print(gradient_descent_loss_values[-1])#
     # torch.save(torch.tensor(gradient_descent_loss_values), 'model_statistics/gradient_descent_loss.pt')
 
     # w = torch.randn(124)
     # v = torch.randn(124)
 
     # print(a9a.hessian_vector_product(w, v))
-    #wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10, init_w)
+    wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10)
     #print(wall_clock_times)
 
     #print(torch.autograd.functional.hessian(a9a.l2_regularized_logistic_regression_loss, torch.ones(124)))
     
     
-    a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, init_w, True)
+    #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, init_w, True)
     #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
     #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
 
