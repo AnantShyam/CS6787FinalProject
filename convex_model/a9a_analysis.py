@@ -248,8 +248,12 @@ class A9A_Analysis:
     
 
     def plot_losses_or_accuracies_all_newton_methods(self, filename, num_epochs, init_w, plot_losses=True):
-        newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
-        self.gmres, 'Conjugate Residual': self.conjugate_residual}
+        # newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
+        # self.gmres, 'Conjugate Residual': self.conjugate_residual}
+
+        newton_methods = {'Exact Newton' :self.newton_method_exact}
+        #newton_methods={'GMRES': self.gmres}
+        #newton_methods={'Conjugate Residual':self.conjugate_residual}
 
         for newton_method_name, newton_method in newton_methods.items():
             _, loss_vals, accuracy_vals, _ = newton_method(num_epochs)
@@ -327,8 +331,8 @@ if __name__ == "__main__":
     a9a_dataset_train, labels_train = helpers.read_a9a_dataset('../data/a9a_train.txt')
     a9a_dataset_test, labels_test = helpers.read_a9a_dataset('../data/a9a_test.txt')
 
-    init_w = torch.rand(a9a_dataset_train.shape[0])
-    torch.save(init_w, 'model_weights/initial_weight_vector.pt')
+    #init_w = torch.rand(a9a_dataset_train.shape[0])
+    #torch.save(init_w, 'model_weights/initial_weight_vector.pt')
     a9a = A9A_Analysis(a9a_dataset_train, labels_train, a9a_dataset_test, labels_test)
     # init_w = torch.rand(a9a.X.shape[0])
     
@@ -341,13 +345,13 @@ if __name__ == "__main__":
     # v = torch.randn(124)
 
     # print(a9a.hessian_vector_product(w, v))
-    wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10)
+    #wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10)
     #print(wall_clock_times)
 
     #print(torch.autograd.functional.hessian(a9a.l2_regularized_logistic_regression_loss, torch.ones(124)))
     
     
-    #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, init_w, True)
+    a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
     #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
     #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
 
