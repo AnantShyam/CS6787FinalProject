@@ -144,11 +144,14 @@ class A9A_Analysis:
             alpha = self.backtrack_line_search(w, update)
 
             loss_val = self.l2_regularized_logistic_regression_loss(w).item()
-            accuracy_values[epoch + 1] = self.test_model(w)
+            accuracy_val = self.test_model(w)
+            accuracy_values[epoch + 1] = accuracy_val
             w = w - (alpha * (update))
 
             #loss_val = self.l2_regularized_logistic_regression_loss(w).item()
             print(loss_val)
+            print(accuracy_val)
+
             loss_values[epoch + 1] = loss_val
             
 
@@ -247,19 +250,19 @@ class A9A_Analysis:
             return accuracy
     
 
-    def plot_losses_or_accuracies_all_newton_methods(self, filename, num_epochs, init_w, plot_losses=True):
+    def plot_losses_or_accuracies_all_newton_methods(self, filename, num_epochs, plot_losses=True):
         # newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
         # self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
-        newton_methods = {'Exact Newton' :self.newton_method_exact}
+        #newton_methods = {'Exact Newton' :self.newton_method_exact}
         #newton_methods={'GMRES': self.gmres}
-        #newton_methods={'Conjugate Residual':self.conjugate_residual}
-
+        newton_methods={'Conjugate Residual':self.conjugate_residual}
         for newton_method_name, newton_method in newton_methods.items():
             _, loss_vals, accuracy_vals, _ = newton_method(num_epochs)
             epochs = [i for i in range(1, num_epochs + 1)]
             loss_values = [val for _, val in loss_vals.items()] 
             accuracy_values = [val for _, val in accuracy_vals.items()]
+            print(accuracy_values)
             if plot_losses:
                 plt.plot(epochs, loss_values, label=newton_method_name)
             else:
@@ -351,8 +354,8 @@ if __name__ == "__main__":
     #print(torch.autograd.functional.hessian(a9a.l2_regularized_logistic_regression_loss, torch.ones(124)))
     
     
-    a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
-    #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
+    #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
+    a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
     #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
 
     #_ = a9a.conjugate_residual(10)
