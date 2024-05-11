@@ -214,7 +214,7 @@ class A9A_Analysis:
             gradient = gradient.numpy()
             hessian_matrix = hessian_matrix.numpy()
 
-            update, _ = scipy.sparse.linalg.gmres(hessian_matrix, gradient, maxiter=10)
+            update, _ = scipy.sparse.linalg.gmres(hessian_matrix, gradient, maxiter=5)
             update = torch.from_numpy(update)
 
             #alpha = 0.09 # do a line search here
@@ -268,7 +268,7 @@ class A9A_Analysis:
         plt.savefig(f'convex_model_plots/{filename}')
 
     
-    def measure_wall_clock_time_all_newton_methods(self, num_epochs):
+    def measure_wall_clock_time_all_newton_methods(self, num_epochs, init_w):
         newton_methods = {'Exact Newton': self.newton_method_exact, 'GMRES': 
         self.gmres, 'Conjugate Residual': self.conjugate_residual}
 
@@ -278,7 +278,7 @@ class A9A_Analysis:
         f.write(f'{num_epochs} \n')
         wall_clock_times = {}
         for newton_method_name, newton_method in newton_methods.items():
-            _, _, _, wall_clock_time = newton_method(num_epochs)
+            _, _, _, wall_clock_time = newton_method(num_epochs, init_w)
             wall_clock_times[newton_method_name] = wall_clock_time
 
         for newton_method_name, wall_clock_time in wall_clock_times.items():
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     # v = torch.randn(124)
 
     # print(a9a.hessian_vector_product(w, v))
-    #wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10)
+    wall_clock_times = a9a.measure_wall_clock_time_all_newton_methods(10, init_w)
     #print(wall_clock_times)
 
     #print(torch.autograd.functional.hessian(a9a.l2_regularized_logistic_regression_loss, torch.ones(124)))
@@ -343,7 +343,7 @@ if __name__ == "__main__":
     
     #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
     #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
-    a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
+    #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10, init_w)
 
     #_ = a9a.conjugate_residual(10)
     # print(time)

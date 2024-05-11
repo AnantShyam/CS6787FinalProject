@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 def conjugate_residual(A, b):
-    tolerance = 10**-6
+    tolerance = 10**-1
     x = torch.rand(b.shape[0])
     residual = b - (A @ x)
     p = residual 
