@@ -1,18 +1,12 @@
 import numpy as np 
 import torch
-import sklearn 
 import helpers
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import hessian
 import scipy
 import time 
-import os
 import krylov
 
-import jax
-import jax.numpy as jnp 
-from jax import grad
             
 
 # give same initializations for all methods 
@@ -194,18 +188,6 @@ class A9A_Analysis:
         return w, loss_values, accuracy_values, end-start
 
     
-    def hessian_vector_product(self, w, u):
-        # takes computes product of Hessian (evaluated at w) * v
-        
-        # convert PyTorch Tensors to Jax arrays
-        w = jnp.asarray(w.numpy())
-        print(type(w))
-        u = jnp.asarray(u.numpy())
-        result = grad(lambda w: jnp.vdot(grad(self.l2_regularized_logistic_regression_loss)(w), u))(u)
-        print(type(w))
-        return result
-
-
     def gmres(self, num_epochs):
         #w = torch.rand(self.X.shape[0]) 
         w = torch.clone(self.w_init)
