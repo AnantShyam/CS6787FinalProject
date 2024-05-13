@@ -91,14 +91,14 @@ if __name__ == "__main__":
     # run newton's method on just first layer for 5 epochs and plot accuracies
 
     num_epochs = 4
-    trained_model, train_accuracies = newton_method(initial_model, train_data_loader, num_epochs, [0, 1, 3])
+    trained_model, train_accuracies = newton_method(initial_model, train_data_loader, num_epochs, [0])
     
-    plt.plot([i for i in range(1, num_epochs + 1)], train_accuracies)
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.savefig('nonconvex_model_plots/newton_method_accuracies_all_but_third_layer.png')
+    # plt.plot([i for i in range(1, num_epochs + 1)], train_accuracies)
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Accuracy')
+    # plt.savefig('nonconvex_model_plots/newton_method_accuracies_test.png')
 
     #print(cifar.test_model(trained_model, train_data_loader))
-    torch.save(trained_model, 'model_weights/trained_model_newton_method_all_but_third_layer.pt')
+    # torch.save(trained_model, 'model_weights/trained_model_newton_method_test.pt')
     # print('Accuracy: ')
     
