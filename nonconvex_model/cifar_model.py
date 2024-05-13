@@ -16,7 +16,6 @@ class CIFAR10Net(nn.Module):
         self.fc1 = nn.Linear(64 * 16 * 16, 512, bias=False)
         self.dropout2 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(512, 10, bias=False)
-        #self.initialize_weights()
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -26,11 +25,3 @@ class CIFAR10Net(nn.Module):
         x = self.dropout1(x)
         x = self.fc2(x)
         return x
-
-    def initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-            elif isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight)
-                nn.init.constant_(m.bias, 0)
