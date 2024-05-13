@@ -52,32 +52,36 @@ def train_model(model, train_data_loader, num_epochs=10):
     start_time = time.time()
     
     loss_values = []
-    mean_accuracies = []
+    accuracies = []
     for epoch in tqdm(range(num_epochs)):
         model.train()
         total_loss = 0.0
 
-        accuracies = []
+        accuracy = test_model(model, train_data_loader)
+        print(accuracy)
+        accuracies.append(accuracy)
+
+        #accuracies = []
         for inputs, labels in train_data_loader:
 
             outputs = model(inputs)
             loss = l2_regularized_cross_entropy_loss(outputs, labels, model, 0)
             total_loss += loss.item()
 
-            acc = accuracy(outputs, labels)
-            accuracies.append(acc)
+            # acc = accuracy(outputs, labels)
+            # accuracies.append(acc)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         
-        mean_accuracy = torch.mean(torch.tensor(accuracies)).item()
-        print(mean_accuracy)
-        mean_accuracies.append(mean_accuracy)
+        #mean_accuracy = torch.mean(torch.tensor(accuracies)).item()
+        #print(mean_accuracy)
+        #mean_accuracies.append(mean_accuracy)
 
         loss_values.append(total_loss)
 
-    return model, loss_values, mean_accuracies
+    return model, loss_values, accuracies
 
 
 def test_model(model, data_loader):
@@ -115,7 +119,8 @@ if __name__ == "__main__":
     initial_model = cifar_model.CIFAR10Net()
     torch.save(initial_model, 'model_weights/initial_model_weights.pt')
     num_epochs = 4
-    trained_model, train_loss_values, train_mean_accuracies = train_model(initial_model, train_data_loader, num_epochs)
+    #init_accuracy = test_model(initial_model, train_data_loader)
+    trained_model, train_loss_values, train_accuracies = train_model(initial_model, train_data_loader, num_epochs)
     
     # torch.save(trained_model, 'model_weights/trained_model_weights.pt')
     # torch.save(torch.tensor(train_loss_values), 'model_statistics/train_loss_values.pt')
@@ -124,8 +129,8 @@ if __name__ == "__main__":
     # plot_values([i for i in range(1, num_epochs + 1)], train_loss_values, 'Epoch Number', 'Train Loss Values', 
     # 'nonconvex_model_plots/train_loss.png')
 
-    plot_values([i for i in range(1, num_epochs + 1)], train_mean_accuracies, 'Epoch Number', 'Train Mean Accuracy', 
-    'nonconvex_model_plots/train_mean_accuracy.png')
+    plot_values([i for i in range(1, num_epochs + 1)], train_accuracies, 'Epoch Number', 'Train Accuracy', 
+    'nonconvex_model_plots/train_accuracy.png')
 
     # torch.save(trained_model, 'model_weights/trained_model_weights.pt')
     # torch.save(torch.tensor(train_loss_values), 'model_statistics/train_loss_values.pt')
