@@ -23,13 +23,6 @@ class A9A_Analysis:
 
 
     def l2_regularized_logistic_regression_loss(self,w):
-        #print(type(w))
-        # if not torch.is_tensor(w):
-        #     #print(type(w))
-        #     #print(type(w))
-        #     #print('printing np array w')
-        #     #w = jax.pure_callback(w)
-        #     w = torch.from_numpy(np.asarray(w))
 
         loss = 0
         n = len(self.y)
@@ -342,7 +335,7 @@ if __name__ == "__main__":
     
     #a9a.plot_losses_or_accuracies_all_newton_methods('loss_vals.png', 10, True)
     #a9a.plot_losses_or_accuracies_all_newton_methods('accuracy_vals.png', 10, False)
-    a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10)
+    #a9a.plot_suboptimality_all_newton_methods('suboptimality.png', 10)
 
     #_ = a9a.conjugate_residual(10)
     # print(time)
